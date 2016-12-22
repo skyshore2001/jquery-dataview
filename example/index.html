@@ -6,36 +6,79 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 	<script src="jquery-1.11.1.min.js"></script>
-	<script src="../jquery-dataview.js"></script>
+	<script src="../jquery-dataview.min.js"></script>
+<style>
+#divPrompt {
+	position: absolute;
+	top: 20px;
+	left: 50%;
+	/*transform: translateX(-50%);*/
+	-webkit-transform: translateX(-50%);
+	min-width: 200px;
+
+	border: 1px solid green;
+	display: none;
+	background-color: lightgreen;
+	padding: 20px;
+}
+
+.error {
+	background-color: red !important;
+}
+</style>
 	<script>
-var log = console.log;
+// type: i-info, e-error
+function log(s, type)
+{
+	console.log(s);
+	var jo = $("#divPrompt").html(s).show();
+	jo.toggleClass("error", type=="e");
+	setTimeout(function () {
+		jo.fadeOut(200);
+	}, 1300);
+}
+
 function assert(cond, errmsg)
 {
-	if (!cond)
+	if (!cond) {
+		log("*** test fail", "e");
 		$.error(errmsg || "*** bad assert");
+	}
+}
+
+window.onerror = function (s) {
+	log("*** error:" + s, "e");
 }
 	</script>
 </head>
 
 <body>
+<div id="divPrompt"></div>
 
+<!-- test1 {{{ -->
 <div id="test1">
 	<hr>
-	<button onclick="test1()">test1</button>
+	test1: DOM填充, 支持子对象
 	<div class="customer">
 		<p>id=<span name="id"></span></p>
 		<p>name=<span name="name"></span></p>
+		<p>city=<span name="addr.city"></span></p>
 	</div>
 </div>
 
 <script>
 function test1()
 {
-	var customer = { id: 1001, name: "SAP AG" };
+	var customer = {
+		id: 1001, 
+		name: "SAP AG",
+		addr: {country: "CN", city: "Shanghai"}
+	};
 	var jo = $("#test1 .customer");
 	jo.dataview(customer);
 	assert(jo.find("[name=id]").html() == "1001");
 	assert(jo.find("[name=name]").html() == "SAP AG");
+	assert(jo.find("[name=addr\\.city]").html() == "Shanghai");
 
 	customer.name = "SAP China";
 	jo.dataview();
@@ -49,16 +92,20 @@ function test1()
 	log("=== test1: pass");
 }
 </script>
+<!-- test1 }}} -->
 
+<!-- test2 {{{ -->
 <div id="test2">
 	<hr>
-	<button onclick="test2()">test2</button>
+	test2: 根据模板插入列表；计算属性及自动更新
+
 	<div id="divCustomers"></div>
 
 	<style type="text/template" id="tplCustomer">
 		<div class="customer">
 			<p>id=<span name="id"></span></p>
 			<p>name=<span name="name"></span></p>
+			<p>fullname=<span name="fullname"></span></p>
 		</div>
 	</style>
 </div>
@@ -73,17 +120,206 @@ function test2()
 	var jtplCustomer = $($("#test2 #tplCustomer").html());
 	var jparent = $("#test2 #divCustomers");
 	jparent.empty();
+
+	var opt = {
+		props: {
+			fullname: function () {
+				// this表示当前层次数据
+				return this.id + " - " + this.name;
+			}
+		}
+	};
 	$.each(customers, function (i, customer) {
 		jtplCustomer.clone()
-			.dataview(customer)
+			.dataview(customer, opt)
 			.appendTo(jparent);
 	});
 
 	// 生成两项
 	assert(jparent.find(".customer").size() == 2);
 	assert(jparent.find(".customer:eq(1) [name=id]").html() == "2001");
+	assert(jparent.find(".customer:eq(1) [name=fullname]").html() == "2001 - Oracle CO");
+
+	customers[1].name += " - updated";
+	jparent.find(".customer:eq(1)").dataview();
+
+	var newName = customers[1].name;
+	assert(jparent.find(".customer:eq(1) [name=fullname]").html() == "2001 - " + newName);
+
 	log("=== test2: pass");
 }
+</script>
+<!-- test2 }}} -->
+
+<!-- test3 {{{ -->
+<div id="test3">
+	<hr>
+	test3: 循环创建、条件创建、条件显示
+
+	<div id="divCustomers">
+		<div dv-for="customers" dv-if="id>=1000" class="customer">
+			<li>
+				<span dv-show="id<=2000">id=<span name="id"></span></span>
+				name=<span name="name"></span>
+			</li>
+		</div>
+	</div>
+</div>
+
+<script>
+function test3()
+{
+	var data = {
+		customers: [
+			{ id: 1, name: "Olive CO" },
+			{ id: 1001, name: "SAP AG" },
+			{ id: 2001, name: "Oracle CO" }
+		]
+	};
+	var jo = $("#test3 #divCustomers");
+	jo.dataview(data);
+
+	// 生成两项
+	assert(jo.find(".customer").size() == 2, "dv-for/dv-if未生效");
+	assert(!jo.find(".customer:eq(1) [name=id]").is(":visible"), "dv-show未生效");
+
+	log("=== test3: pass");
+}
+</script>
+<!-- test3 }}} -->
+
+<!-- test4 {{{ -->
+<div id="test4">
+	<hr>
+	test4: 事件绑定
+
+	<form class="customer" dv-on="frmCustomer_submit">
+		<p>id=<span name="id"></span></p>
+		<input dv-on="txtName_change,txtName_keydown" name="name">
+		<button id="btnUpdate" dv-on="btnUpdate_click">更新</button>
+	</form>
+</div>
+
+<script>
+function test4()
+{
+	test4.cnt_ = 0;
+	var events = {
+		frmCustomer_submit: function (ev) {
+			++ test4.cnt_;
+			//alert(arguments.callee.name);
+			console.log("cancel submit");
+			return false;
+		},
+		txtName_change: function (ev) {
+			alert(arguments.callee.name);
+		},
+		txtName_keydown: function (ev) {
+			console.log(arguments.callee.name);
+		},
+		btnUpdate_click: function (ev) {
+			++ test4.cnt_;
+			//alert(arguments.callee.name);
+		}
+	};
+	var opt = {
+		events: events
+	};
+
+	var customer = { id: 1001, name: "SAP AG" };
+	$("#test4 .customer").dataview(customer, opt);
+
+	// 应触发 btnUpdate_click和frmCustomer_submit, 两次
+	$("#test4 #btnUpdate").click();
+	assert(test4.cnt_ == 2, "事件绑定未生效");
+
+	log("=== test4: pass");
+}
+</script>
+<!-- test4 }}} -->
+
+<!-- test5 {{{ -->
+<div id="test5">
+	<hr>
+	test5: 多层嵌套
+
+	<div class="customer">
+		<p> name: <span name="name"></span>  </p>
+		<p> addr: <span name="addr.country"></span> / <span name="addr.city"></span> </p>
+		<ul>
+			<li dv-for="orders" class="order">
+				<p>order id=<span name="id"></span>, amount=<span name="amount"></span></p>
+				<ul>
+					<li dv-for="items" class="item">
+						<p>item id=<span name="id"></span></p>
+						<p>item name=<span name="name"></span></p>
+						<p>fullname=<span name="fullname"></span></p>
+					</li>
+				</ul>
+			</li>
+		</ul>
+	</div>
+</div>
+
+<script>
+function test5()
+{
+	var customer = {
+		id: 1001, 
+		name: "SAP AG",
+		addr: {country: "CN", city: "Shanghai"},
+		orders: [
+			{id: 1, amount: 9000, items: [
+				{id: 101, name: "item 101"},
+				{id: 102, name: "item 102"}
+			]},
+			{id: 2, amount: 11000, items: [
+				{id: 201, name: "item 201"}
+			]}
+		]
+	};
+	var itemOpt = {
+		props: {
+			fullname: function () {
+				var order = this.$parent;
+				var customer = order.$parent;
+				return customer.name + " - " + this.name;
+			}
+		}
+	};
+	var orderOpt = {
+		children: {items: itemOpt}
+	};
+	var customerOpt = {
+		children: {orders: orderOpt}
+	};
+
+	var jo = $("#test5 .customer");
+	jo.dataview(customer, customerOpt);
+
+	assert(jo.find(".order").size() == 2, "生成order数目不对");
+	assert(jo.find(".item").size() == 3, "生成item数目不对");
+	assert(jo.find(".item:eq(0) [name=fullname]").html() == "SAP AG - item 101", "fullname计算属性不正确");
+
+	// 局部更新：只更新一个item
+	var newName = (customer.orders[1].items[0].name += " - updated");
+	jo.find(".order:eq(1)").dataview();
+	assert(jo.find(".order:eq(1) .item:eq(0) [name=fullname]").html() == "SAP AG - " + newName, "局部更新后fullname计算属性不正确");
+
+	log("=== test5: pass");
+}
+</script>
+<!-- test5 }}} -->
+
+<script>
+
+// 执行所有测试用例
+for (var k in window) {
+	if (/^test/.test(k) && $.isFunction(window[k])) {
+		window[k]();
+	}
+}
+log("test pass");
 </script>
 
 </body>

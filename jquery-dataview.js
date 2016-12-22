@@ -627,9 +627,6 @@ function setFormData(jo, data, opt)
  */
 $.fn.extend({
 	dataview: function (data, opt) {
-		if (data == null)
-			return setDataView(this);
-
 		if (typeof(data) == "string")
 		{
 			if (! m_exposed[data])
@@ -642,6 +639,11 @@ $.fn.extend({
 			});
 			return m_exposed[data].apply(this, args);
 		}
+
+		// 更新操作
+		if (data == null || getData(this) != null)
+			return setDataView(this);
+
 		var opt1 = $.extend({}, m_defaults, opt);
 		if (this.size() != 1) {
 			$.error("*** dataview: MUST only one DOM object.");
