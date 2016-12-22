@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>jquery-dataview示例</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+	<script src="jquery-1.11.1.min.js"></script>
+	<script src="../jquery-dataview.js"></script>
+	<script>
+var log = console.log;
+function assert(cond, errmsg)
+{
+	if (!cond)
+		$.error(errmsg || "*** bad assert");
+}
+	</script>
+</head>
+
+<body>
+
+<div id="test1">
+	<hr>
+	<button onclick="test1()">test1</button>
+	<div class="customer">
+		<p>id=<span name="id"></span></p>
+		<p>name=<span name="name"></span></p>
+	</div>
+</div>
+
+<script>
+function test1()
+{
+	var customer = { id: 1001, name: "SAP AG" };
+	var jo = $("#test1 .customer");
+	jo.dataview(customer);
+	assert(jo.find("[name=id]").html() == "1001");
+	assert(jo.find("[name=name]").html() == "SAP AG");
+
+	customer.name = "SAP China";
+	jo.dataview();
+	assert(jo.find("[name=name]").html() == "SAP China");
+
+	var data = jo.dataview('getData');
+	assert(data === customer);
+	var data1 = jo.find("[name=id]").dataview('getData');
+	assert(data1 === customer);
+
+	log("=== test1: pass");
+}
+</script>
+
+<div id="test2">
+	<hr>
+	<button onclick="test2()">test2</button>
+	<div id="divCustomers"></div>
+
+	<style type="text/template" id="tplCustomer">
+		<div class="customer">
+			<p>id=<span name="id"></span></p>
+			<p>name=<span name="name"></span></p>
+		</div>
+	</style>
+</div>
+
+<script>
+function test2()
+{
+	var customers = [
+		{ id: 1001, name: "SAP AG" },
+		{ id: 2001, name: "Oracle CO" }
+	];
+	var jtplCustomer = $($("#test2 #tplCustomer").html());
+	var jparent = $("#test2 #divCustomers");
+	jparent.empty();
+	$.each(customers, function (i, customer) {
+		jtplCustomer.clone()
+			.dataview(customer)
+			.appendTo(jparent);
+	});
+
+	// 生成两项
+	assert(jparent.find(".customer").size() == 2);
+	assert(jparent.find(".customer:eq(1) [name=id]").html() == "2001");
+	log("=== test2: pass");
+}
+</script>
+
+</body>
+</html>
+<!-- vim: set foldmethod=marker : -->

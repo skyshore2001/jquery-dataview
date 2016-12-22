@@ -375,7 +375,7 @@ var m_version = '1.0';
 // 以下函数首参数必须是dataview对象，用jo表示。
 var m_exposed = {
 	getData: getData,
-	setFormData: setFormData,
+	//setFormData: setFormData,
 
 /**
 @fn version()
