@@ -26,30 +26,7 @@
 	background-color: red !important;
 }
 </style>
-	<script>
-// type: i-info, e-error
-function log(s, type)
-{
-	console.log(s);
-	var jo = $("#divPrompt").html(s).show();
-	jo.toggleClass("error", type=="e");
-	setTimeout(function () {
-		jo.fadeOut(200);
-	}, 1300);
-}
 
-function assert(cond, errmsg)
-{
-	if (!cond) {
-		log("*** test fail", "e");
-		$.error(errmsg || "*** bad assert");
-	}
-}
-
-window.onerror = function (s) {
-	log("*** error:" + s, "e");
-}
-	</script>
 </head>
 
 <body>
@@ -312,14 +289,47 @@ function test5()
 <!-- test5 }}} -->
 
 <script>
+var m_curCase;
+// type: i-info, e-error
+function log(s, type)
+{
+	console.log(s);
+	var jo = $("#divPrompt").html(s).show();
+	jo.toggleClass("error", type=="e");
+	setTimeout(function () {
+		jo.fadeOut(200);
+	}, 1300);
+}
 
-// 执行所有测试用例
-for (var k in window) {
-	if (/^test/.test(k) && $.isFunction(window[k])) {
-		window[k]();
+function assert(cond, errmsg)
+{
+	if (!cond) {
+		var msg = "*** case `" + m_curCase + "` fails: " + (errmsg || "bad assert");
+		log(msg, "e");
+		throw "myabort";
 	}
 }
-log("test pass");
+
+window.onerror = function (s) {
+	if (s.indexOf("myabort"))
+		return true;
+	log("*** error:" + s, "e");
+}
+
+function main()
+{
+	// 执行所有测试用例
+	for (var k in window) {
+		if (/^test/.test(k) && $.isFunction(window[k])) {
+			m_curCase = k;
+			window[k]();
+		}
+	}
+	log("all tests pass!");
+}
+
+$(main);
+
 </script>
 
 </body>
