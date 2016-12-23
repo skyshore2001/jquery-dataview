@@ -6,7 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 	<script src="jquery-1.11.1.min.js"></script>
-	<script src="../jquery-dataview.min.js"></script>
+	<script src="../jquery-dataview.js"></script>
 <style>
 #divPrompt {
 	position: absolute;
@@ -25,6 +25,10 @@
 .error {
 	background-color: red !important;
 }
+
+.test {
+	display: none;
+}
 </style>
 
 </head>
@@ -33,7 +37,7 @@
 <div id="divPrompt"></div>
 
 <!-- test1 {{{ -->
-<div id="test1">
+<div id="test1" class="test">
 	<hr>
 	test1: DOM填充, 支持子对象
 	<div class="customer">
@@ -72,7 +76,7 @@ function test1()
 <!-- test1 }}} -->
 
 <!-- test2 {{{ -->
-<div id="test2">
+<div id="test2" class="test">
 	<hr>
 	test2: 根据模板插入列表；计算属性及自动更新
 
@@ -129,7 +133,7 @@ function test2()
 <!-- test2 }}} -->
 
 <!-- test3 {{{ -->
-<div id="test3">
+<div id="test3" class="test">
 	<hr>
 	test3: 循环创建、条件创建、条件显示
 
@@ -166,7 +170,7 @@ function test3()
 <!-- test3 }}} -->
 
 <!-- test4 {{{ -->
-<div id="test4">
+<div id="test4" class="test">
 	<hr>
 	test4: 事件绑定
 
@@ -216,7 +220,7 @@ function test4()
 <!-- test4 }}} -->
 
 <!-- test5 {{{ -->
-<div id="test5">
+<div id="test5" class="test">
 	<hr>
 	test5: 多层嵌套
 
@@ -288,7 +292,81 @@ function test5()
 </script>
 <!-- test5 }}} -->
 
+<!-- test6 {{{ -->
+<div id="test6" class="test">
+<style>
+.req .user, .req .person, .req .familyTitle {
+	background-color: #ccc;
+	min-width: 100px;
+}
+</style>
+	<hr>
+	test6: dv-elseif/dv-else, 顶层对象"this"
+	<ul>
+	<li class="req" dv-for="this">
+		<div>
+			<p class="typeLnk" dv-if="type=='LNK'">
+				<span class="user" name="reqUserName"></span>发出靠谱请求：将<span class="person" name="personName"></span>作为<span class="person" name="parentName"></span>的儿子.
+			</p>
+			<p class="typeCo" dv-else>
+				<span class="user" name="reqUserName"></span>发出协作请求：共同编辑家谱<span name="family" class="familyTitle">.</span>
+			</p>
+			<p class="statusYes" dv-if="status=='YES'">已同意</p>
+			<p class="statusNo" dv-elseif="status=='NO'">已拒绝</p>
+			<div class="statusNew" dv-else>
+				<input type="button" dv-on="btnYesNo_click" data-status="YES" value="同意">
+				<input type="button" dv-on="btnYesNo_click" data-status="NO" value="拒绝">
+			</div>
+		</div>
+	</li>
+	</ul>
+</div>
+
 <script>
+function test6()
+{
+	var reqs = [
+		{
+			type: "LNK", reqUserName: "发起人A", personName: "子", parentName: "父",
+			status: 'NEW'
+		},
+		{
+			type: "LNK", reqUserName: "发起人A", personName: "子", parentName: "父",
+			status: 'YES'
+		},
+		{
+			type: "LNK", reqUserName: "发起人A", personName: "子", parentName: "父",
+			status: 'NO'
+		},
+		{
+			type: "CO", reqUserName: "发起人B", family: "家族A",
+			status: 'YES'
+		}
+	];
+	var reqOpt = {
+		events: {
+			btnYesNo_click: function (ev) {
+				var id = ev.data.id;
+				var status = $(this).attr("data-status");
+				alert(id + "/" + status);
+			}
+		}
+	};
+
+	var jo = $("#test6 .req");
+	jo.dataview(reqs, reqOpt);
+
+	log("=== test6: pass");
+}
+</script>
+<!-- test6 }}} -->
+
+<!-- framework {{{-->
+<script>
+var RUN_CASE = "all";
+//var RUN_CASE = "test6";
+
+
 var m_curCase;
 // type: i-info, e-error
 function log(s, type)
@@ -311,26 +389,40 @@ function assert(cond, errmsg)
 }
 
 window.onerror = function (s) {
-	if (s.indexOf("myabort"))
+	if (s.indexOf("myabort") >=0)
 		return true;
 	log("*** error:" + s, "e");
 }
 
+function runTest(jo)
+{
+	jo.show();
+	var fname = jo.attr("id");
+	var fn = window[fname];
+	if ($.isFunction(fn)) {
+		m_curCase = fname;
+		fn();
+	}
+}
+
 function main()
 {
-	// 执行所有测试用例
-	for (var k in window) {
-		if (/^test/.test(k) && $.isFunction(window[k])) {
-			m_curCase = k;
-			window[k]();
-		}
+	if (RUN_CASE != "all") {
+		runTest($("#" + RUN_CASE));
 	}
-	log("all tests pass!");
+	else {
+		// 执行所有测试用例
+		$(".test[id]").each(function() {
+			runTest($(this));
+		});
+		log("all tests pass!");
+	}
 }
 
 $(main);
 
 </script>
+<!-- }}} -->
 
 </body>
 </html>
