@@ -497,19 +497,27 @@ function setDataView(jo, data, opt, doInit, doSetData)
 
 	var vfor;
 	if (doInit && (vfor = jo.attr("dv-for")) ) {
-		var arrData = vfor=='this'? data: data[vfor];
+		var isThis = (vfor == 'this');
+		var arrData = isThis? data: data[vfor];
 		if (! $.isArray(arrData)) {
 			console.log("!!! warn: not array: " + vfor);
 			return $([]);
 		}
-		var opt1 = (opt.children && opt.children[vfor]) || {};
-		opt1.events = opt.events;
+		var opt1;
+		if (! isThis) {
+			opt1 = (opt.children && opt.children[vfor]) || {};
+			opt1.events = opt.events;
+		}
+		else {
+			opt1 = opt;
+		}
 
 		var joRet = $([]);
 		$.each(arrData, function (i, data1) {
 			var jo1 = jo.clone();
 			jo1.removeAttr("dv-for"); // 不再展开
-			data1.$parent = data;
+			if (! isThis)
+				data1.$parent = data;
 			jo1 = setDataView(jo1, data1, opt1, doInit, true);
 			jo1.insertBefore(jo);
 			joRet = joRet.add(jo1);
