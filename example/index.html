@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>jquery-dataview示例</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+	<script src="jquery-1.11.1.min.js"></script>
+	<script src="../jquery-dataview.min.js"></script>
+</head>
+
+<body>
+
+<div>
+	根据模板插入列表；计算属性及自动更新
+	<hr>
+
+	<ul id="divCustomers"></ul>
+
+	<style type="text/template" id="tplCustomer">
+		<li class="customer">
+			<p>id=<span name="id"></span></p>
+			<p>name=<span name="name"></span></p>
+			<p>fullname=<span name="fullname"></span></p>
+			<input dv-on="txtName_change" name="name">
+		</li>
+	</style>
+</div>
+
+<script>
+
+function main()
+{
+	var customers = [
+		{ id: 1001, name: "SAP AG" },
+		{ id: 2001, name: "Oracle CO" }
+	];
+	var jtplCustomer = $($("#tplCustomer").html());
+	var jparent = $("#divCustomers");
+	jparent.empty();
+
+	var opt = {
+		props: {
+			fullname: function () {
+				// this表示当前层次数据
+				return this.id + " - " + this.name;
+			}
+		},
+
+		events: {
+			txtName_change: function (ev) {
+				// 更新
+				ev.data.name = $(this).val();
+				$(this).closest(".customer").dataview();
+			}
+		}
+	};
+	$.each(customers, function (i, customer) {
+		jtplCustomer.clone()
+			.dataview(customer, opt)
+			.appendTo(jparent);
+	});
+}
+
+$(main);
+</script>
+
+</body>
+</html>
+<!-- vim: set foldmethod=marker : -->

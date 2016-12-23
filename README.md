@@ -5,7 +5,7 @@ jquery插件，用于对DOM进行数据填充与更新，也很适合根据DOM�
 特点：
 
 - 允许人为精准控制更新区域，可以更新dataview对象或其任意子对象
-- 对多层次数据支持良好，可对子对象数组用vd-for标签展开，并自动绑定到子对象数据。
+- 对多层次数据支持良好，可对子对象数组用dv-for标签展开，并自动绑定到子对象数据。
 
 ## 为DOM对象填充数据
 
@@ -180,11 +180,65 @@ JS:
 	jo1 = jo.dataview(data); // jo1与jo可能不同。
 ```
 
+如果数据本身就是个数组，可以用`dv-for="this"`来标识数据：
+
+```html
+	<div dv-for="this" class="customer">
+	</div>
+```
+
+JS:
+```javascript
+	var customers = [
+		{ id: 1, name: "Olive CO" },
+		{ id: 1001, name: "SAP AG" },
+		{ id: 2001, name: "Oracle CO" }
+	];
+	$(".customer").dataview(customers);
+```
+
 dv-if及dv-show属性中指定一个条件表达式，它可以比name中指定的内容要复杂，它的计算原理是：
 
 ```javascript
 	with(data) { eval(val); }
 ```
+
+### 条件分支
+
+除`dv-if`外，还可以使用`dv-elseif`, `dv-else`。
+
+HTML:
+
+```html
+	<div dv-for="this" id="divStatus">
+		<p dv-if="status=='YES'">已同意</p>
+		<p dv-elseif="status=='NO'">已拒绝</p>
+		<div dv-else>
+			<input type="button" dv-on="btnYesNo_click" data-status="YES" value="同意">
+			<input type="button" dv-on="btnYesNo_click" data-status="NO" value="拒绝">
+		</div>
+	</div>
+```
+
+JS:
+
+```javascript
+	var data = [
+		{ status: 'YES' },
+		{ status: 'NO' },
+		{ status: 'NEW' },
+	]
+	$("#divStatus").dataview(data);
+```
+
+注意：
+
+- 同一组标签必须用在同一层次的DOM上。下例中`dv-if`和`dv-else`不在同一层次上，最终结果是`dv-else`总会显示。
+
+		<p dv-if="status=='YES'">已同意</p>
+		<div><p dv-else>已拒绝</p></div>
+
+- 在同一层上，`dv-if`可以多次出现。对每项均重新计算。支持嵌套，即`dv-if`等标签也可以多次出现在不同层次中。
 
 ## 指定事件
 

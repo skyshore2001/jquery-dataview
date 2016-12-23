@@ -2,7 +2,7 @@
 <html>
 <head>
 	<meta charset="utf-8" />
-	<title>jquery-dataview示例</title>
+	<title>jquery-dataview示例及测试用例</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 	<script src="jquery-1.11.1.min.js"></script>
@@ -40,11 +40,11 @@
 <div id="test1" class="test">
 	<hr>
 	test1: DOM填充, 支持子对象
-	<div class="customer">
+	<li class="customer">
 		<p>id=<span name="id"></span></p>
 		<p>name=<span name="name"></span></p>
 		<p>city=<span name="addr.city"></span></p>
-	</div>
+	</li>
 </div>
 
 <script>
@@ -80,14 +80,14 @@ function test1()
 	<hr>
 	test2: 根据模板插入列表；计算属性及自动更新
 
-	<div id="divCustomers"></div>
+	<ul id="divCustomers"></ul>
 
 	<style type="text/template" id="tplCustomer">
-		<div class="customer">
+		<li class="customer">
 			<p>id=<span name="id"></span></p>
 			<p>name=<span name="name"></span></p>
 			<p>fullname=<span name="fullname"></span></p>
-		</div>
+		</li>
 	</style>
 </div>
 
@@ -137,14 +137,12 @@ function test2()
 	<hr>
 	test3: 循环创建、条件创建、条件显示
 
-	<div id="divCustomers">
-		<div dv-for="customers" dv-if="id>=1000" class="customer">
-			<li>
-				<span dv-show="id<=2000">id=<span name="id"></span></span>
-				name=<span name="name"></span>
-			</li>
-		</div>
-	</div>
+	<ul id="divCustomers">
+		<li dv-for="customers" dv-if="id>=1000" class="customer">
+			<span dv-show="id<=2000">id=<span name="id"></span></span>
+			name=<span name="name"></span>
+		</li>
+	</ul>
 </div>
 
 <script>
@@ -328,25 +326,21 @@ function test6()
 	var reqs = [
 		{
 			type: "LNK", reqUserName: "发起人A", personName: "子", parentName: "父",
-			status: 'NEW'
-		},
-		{
-			type: "LNK", reqUserName: "发起人A", personName: "子", parentName: "父",
 			status: 'YES'
-		},
-		{
-			type: "LNK", reqUserName: "发起人A", personName: "子", parentName: "父",
-			status: 'NO'
 		},
 		{
 			type: "CO", reqUserName: "发起人B", family: "家族A",
-			status: 'YES'
+			status: 'NO'
+		},
+		{
+			type: "LNK", reqUserName: "发起人C", personName: "子", parentName: "父",
+			status: 'NEW'
 		}
 	];
 	var reqOpt = {
 		events: {
 			btnYesNo_click: function (ev) {
-				var id = ev.data.id;
+				var id = ev.data.reqUserName;
 				var status = $(this).attr("data-status");
 				alert(id + "/" + status);
 			}
@@ -355,6 +349,21 @@ function test6()
 
 	var jo = $("#test6 .req");
 	jo.dataview(reqs, reqOpt);
+
+	var jp = $("#test6");
+	assert(jp.find(".req").size() == 3);
+	for (var i=0; i<3; ++i)
+		checkSize(i);
+
+	function checkSize(idx)
+	{
+		var jo1 = jp.find(".req:eq(" + idx + ")");
+		assert(jo1.find(".typeLnk").size() == (reqs[idx].type=="LNK")?1:0);
+		assert(jo1.find(".typeCo").size() == (reqs[idx].type=="CO")?1:0);
+		assert(jo1.find(".statusYes").size() == (reqs[idx].status=="YES")?1:0);
+		assert(jo1.find(".statusNo").size() == (reqs[idx].status=="NO")?1:0);
+		assert(jo1.find(".statusNew").size() == (reqs[idx].status=="NEW")?1:0);
+	}
 
 	log("=== test6: pass");
 }
