@@ -707,7 +707,7 @@ function setFormData(jo, data, opt)
 
 /**
 @fn $.fn.dataview(data, opt?)
-@fn $.fn.dataview(method, param1, ...)
+@alias $.fn.dataview(method, param1, ...)
 
 @param opt={props, events}
 
@@ -727,12 +727,9 @@ $.fn.extend({
 			if (! m_exposed[data])
 				$.error("*** unknown call: " + data);
 
-			var args = [this];
-			$.each(arguments, function (i, e) {
-				if (i > 0)
-					args.push(e);
-			});
-			return m_exposed[data].apply(this, args);
+			var fn = m_exposed[data];
+			arguments[0] = this;
+			return fn.apply(this, arguments);
 		}
 
 		// 更新操作
@@ -751,6 +748,10 @@ $.fn.extend({
 
 /**
 @var $.fn.dataview.defaults
+
+设置全局缺省选项。
+
+@see $.fn.dataview 参考opt参数说明。
  */
 $.fn.dataview.defaults = m_defaults;
 

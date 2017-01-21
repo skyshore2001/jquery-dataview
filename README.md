@@ -1,11 +1,14 @@
-@module jquery-dataview 数据视图
+# jquery-dataview 数据视图插件 - 数据填充与视图更新利器
 
-jquery插件，用于对DOM进行数据填充与更新，也很适合根据DOM模板创建对象。
+jquery-dataview是一个超轻量的jquery插件，用于对DOM进行数据填充与更新，也很适合根据DOM模板创建对象。
 
-特点：
+与一些纯模板库（例如juicer）相比，它不仅能提供根据模板填入数据、支持循环、支持条件创建等功能，还支持绑定事件，最重要的是，在创建完DOM对象后，这些对象（称为数据视图）关联到原始数据，修改数据后，相应的视图也得以更新。
 
-- 允许人为精准控制更新区域，可以更新dataview对象或其任意子对象
-- 对多层次数据支持良好，可对子对象数组用dv-for标签展开，并自动绑定到子对象数据。
+与一些支持数据驱动或MVVM模式的库（例如vue）相比，它没有去做数据绑定等高级自动化的机制，那涉及诸多复杂逻辑，比如属性依赖管理等，使用者如果了解不多，很可能写出低效的代码，或触发一连串未曾预料的后果。比如在一个列表中，只更新其中一条数据的某个属性，就可能导致刷新整个列表，甚至发起与后端的多次不必要交互。
+
+jquery-dataview插件的设计理念是简单而灵活，它不采用极其复杂的自动化更新机制，而是允许人为精准控制更新时机与更新区域；同时，它最小化并压缩后仅2K不到，很适合在移动端开发使用。
+
+下面介绍几个入门例子。
 
 ## 为DOM对象填充数据
 
@@ -27,7 +30,7 @@ JS填充数据:
 	$(".customer").dataview(customer);
 ```
 
-递归遍历所有带name属性的结点，如`<span name="id"></span>`会用`customer.id`为其赋值。
+它会递归遍历所有带name属性的结点，如`<span name="id"></span>`会用`customer.id`为其赋值。
 
 JS修改数据后，可无参数调用dataview来刷新显示：
 
@@ -36,21 +39,17 @@ JS修改数据后，可无参数调用dataview来刷新显示：
 	$(".customer").dataview();
 ```
 
-取DOM绑定的数据：
+获取DOM绑定的数据：
 
 ```javascript
 	var data = $(".customer").dataview('getData');
 ```
 
-上面是调用getData方法的形式，在文档中表示为
-
-	@fn getData()
-
-如果有参数，则加到调用名后面。
-
 ## 为模板填充数据
 
-HTML:
+这个例子在项目中更加常用，展示根据模板创建DOM、填充数据并插入文档中。
+
+HTML: 客户列表
 
 ```html
 	<div id="divCustomers"></div>
@@ -63,7 +62,7 @@ HTML:
 	</style>
 ```
 
-JS:
+JS: 根据“客户”模板创建客户并插入列表中。
 
 ```javascript
 	var customers = [
@@ -79,67 +78,11 @@ JS:
 	});
 ```
 
-## 计算属性
-
-在JS中通过`props`选项指定属性的计算函数。
-
-HTML:
-
-```html
-	<div class="customer">
-		<p>id=<span name="id"></span></p>
-		<p>fullname=<span name="fullname"></span></p>
-	</div>
-```
-
-JS: 定义fullname属性
-
-```javascript
-	var customer = { id: 1001, name: "SAP AG" };
-	var opt = {
-		props: {
-			fullname: function () {
-				// this表示当前层次数据
-				return this.id + " - " + this.name;
-			}
-		}
-	};
-	$(".customer").dataview(customer, opt);
-
-	// 更新：
-	customer.name = "SAP China";
-	$(".customer").dataview();
-	// fullname也得到更新.
-```
-
-在初始化时，做为计算属性的函数会自动添加到相应的数据上。
-在更新视图时，如果发现name属性指定的是一个函数，则以调用后的值来填充。
-
-## 访问子对象
-
-假如有数据：
-
-```javascript
-	var customer = {
-		id: 1001, 
-		name: "SAP AG",
-		addr: {country: "CN", city: "Shanghai"}
-	};
-```
-
-这里`addr`是`customer`的子对象，可以这样来显示`customer.addr.city`:
-
-```html
-	<span name="addr.city"></span>
-```
-
-求值时，以 `eval("data." + name)` 的方式获得值。（未使用with机制计算以免降低性能）
-
 ## 循环创建、条件创建、条件显示
 
-子对象数组可以以`dv-for`属性来指定循环展开，每复制一个DOM，都会绑定数据到相应的子对象上。
+子对象数组可以以`dv-for`属性来指定循环展开。
 
-dv-if及dv-show属性：根据该属性的值计算是否保留该结点，或显示该结点。
+dv-if及dv-show属性：根据该属性的值计算是否创建或显示该结点。
 
 例：使用dv-for, dv-if, dv-show等标签：
 
@@ -169,87 +112,20 @@ JS:
 	$("#divCustomers").dataview(data);
 ```
 
-结果：
-
-- dv-for指定了用于循环的数组数据，由data.customers数组总共生成两项，id=1的那项因不满足dv-if="id>1000"的条件没有创建。
-- dv-show指定了显示出来的条件，因而id=2001的项未显示出id。
-
-`dv-for`可以在顶层出现，这时dataview返回的是一个新的DOM数组，与传入的jo会不同。
-
-```javascript
-	jo1 = jo.dataview(data); // jo1与jo可能不同。
-```
-
-如果数据本身就是个数组，可以用`dv-for="this"`来标识数据：
-
-```html
-	<div dv-for="this" class="customer">
-	</div>
-```
-
-JS:
-```javascript
-	var customers = [
-		{ id: 1, name: "Olive CO" },
-		{ id: 1001, name: "SAP AG" },
-		{ id: 2001, name: "Oracle CO" }
-	];
-	$(".customer").dataview(customers);
-```
-
-dv-if及dv-show属性中指定一个条件表达式，它可以比name中指定的内容要复杂，它的计算原理是：
-
-```javascript
-	with(data) { eval(val); }
-```
-
-### 条件分支
-
-除`dv-if`外，还可以使用`dv-elseif`, `dv-else`。
-
-HTML:
-
-```html
-	<div dv-for="this" id="divStatus">
-		<p dv-if="status=='YES'">已同意</p>
-		<p dv-elseif="status=='NO'">已拒绝</p>
-		<div dv-else>
-			<input type="button" dv-on="btnYesNo_click" data-status="YES" value="同意">
-			<input type="button" dv-on="btnYesNo_click" data-status="NO" value="拒绝">
-		</div>
-	</div>
-```
-
-JS:
-
-```javascript
-	var data = [
-		{ status: 'YES' },
-		{ status: 'NO' },
-		{ status: 'NEW' },
-	]
-	$("#divStatus").dataview(data);
-```
-
-注意：
-
-- 同一组标签必须用在同一层次的DOM上。下例中`dv-if`和`dv-else`不在同一层次上，最终结果是`dv-else`总会显示。
-
-		<p dv-if="status=='YES'">已同意</p>
-		<div><p dv-else>已拒绝</p></div>
-
-- 在同一层上，`dv-if`可以多次出现。对每项均重新计算。支持嵌套，即`dv-if`等标签也可以多次出现在不同层次中。
+上例中，由data.customers子数组循环创建DOM，其中`id=1`的customer没有创建，因为不满足`dv-if="id>=1000"`的条件；而`id=2001`的那个customer由于不满足`dv-show="id<=2000"`的条件，因而id没有显示出来。
 
 ## 指定事件
 
-在HTML中使用`dv-on`属性指定事件，在JS中使用选项`events`与其对应。
+dataview不仅绑定数据，还可以用`dv-on`属性绑定事件，在JS中使用选项`events`与其对应。
 
 ```html
 	<div dv-on="liOrder_click"></div>
 ```
 
-上面代码定义了`jo.on("click", data, liOrder_click)`，所有用到的函数必须通过`events`选项定义：
+事件名必须是`{对象名}_{事件名}`的格式。
+上面代码最终相当于调用`jo.on("click", data, liOrder_click)`，绑定的数据会通过event.data传递给回调函数，因而在回调函数中处理数据特别方便。
 
+用到的函数必须通过`events`选项定义：
 ```javascript
 	var events = {
 		liOrder_click: function (ev) {
@@ -259,86 +135,15 @@ JS:
 	};
 	jo.dataview(data, {events: events});
 ```
-
-可以指定多个事件，用逗号","隔开：
-
-```html
-	<input dv-on="txtName_change,txtName_keydown"></div>
-```
-
-HTML:
-
-```html
-	<form class="customer" dv-on="frmCustomer_submit">
-		<p>id=<span name="id"></span></p>
-		<input dv-on="txtName_change,txtName_keydown" name="name">
-		<button dv-on="btnUpdate_click">更新</button>
-	</form>
-```
-
-上面为form指定了submit事件，dv-on的值要求是`{domName}_{eventName}`的格式，domName可任意起名，eventName必须是合法的事件名。
-
-JS:
-
-```javascript
-	var events = {
-		frmCustomer_submit: function (ev) {
-			alert(arguments.callee.name);
-			console.log("cancel submit");
-			return false;
-		},
-		txtName_change: function (ev) {
-			alert(arguments.callee.name);
-		},
-		txtName_keydown: function (ev) {
-			console.log(arguments.callee.name);
-		},
-		btnUpdate_click: function (ev) {
-			alert(arguments.callee.name);
-		}
-	};
-	var opt = {
-		events: events
-	};
-
-	var customer = { id: 1001, name: "SAP AG" };
-	$(".customer").dataview(customer, opt);
-```
-
-与直接使用onclick属性相比，用dv-on的好处有：
-
-- 事件处理函数不必是全局函数。
-- 事件处理函数的参数`ev.data`即是DOM绑定的数据，使用很方便。
-
-## 获取数据
-
-```javascript
-	// 获取DOM关联的数据
-	var data = jo.dataview('getData');
-
-	//TODO:
-	// 获取用户输入的数据
-	var formData = jo.dataview('getFormData');
-	// 获取用户输入的数据与原始数据差异部分。
-	var formDataDiff = jo.dataview('getFormData', {diff: true});
-```
+与直接使用原生支持的onclick属性相比，使用dv-on属性的好处是事件处理函数不必是全局函数，而且事件处理函数的参数`ev.data`即是DOM绑定的数据，非常方便。
 
 ## 多层嵌套的数据
 
-每个对象数组是一个嵌套层次。
+对复杂的多层次嵌套数据的支持是dataview插件的一大亮点。
+通过精巧的设计，它不仅做到填充数据时特别简单，而且在更新数据时，允许自由地更新任意区域，行为易懂且效率很高。
 
-- 可通过数据的 `$parent` 属性访问上层数据。
-- 支持子对象的计算字段
-- 不必更新根对象，可以指定更新任意子对象的数据视图。
-
-示例：数据模型如下：
-
-	customer = {id, name, %addr={country, city}, @orders }
-	@orders = {id, amount, @items={id, name} }
-
-customer是0层，@orders是第1层，@items是第2层; 注意：addr下的字段与customer是当作同一层的。
-
-JS数据：
+JS数据：一个customer-客户，它包含id, name等普通属性，包含一个子对象addr-地址信息，还包含一个子对象数组orders-订单。
+每个订单中，又包含一个子对象数组items-物料信息。
 
 ```javascript
 	var customer = {
@@ -357,7 +162,7 @@ JS数据：
 	}
 ```
 
-HTML数据视图：
+HTML数据视图，展示客户、订单、物料三层数据：
 
 ```html
 	<div class="customer">
@@ -370,7 +175,6 @@ HTML数据视图：
 					<li dv-for="items" class="item">
 						<p>item id=<span name="id"></span></p>
 						<p>item name=<span name="name"></span></p>
-						<p>fullname=<span name="fullname"></span></p>
 					</li>
 				</ul>
 			</li>
@@ -378,43 +182,41 @@ HTML数据视图：
 	</div>
 ```
 
-注意：
-
-- 可以使用`addr.country`的格式指定数据源。
-
-JS:
+JS: 
 
 ```javascript
-	var itemOpt = {
-		props: {
-			fullname: function () {
-				var order = this.$parent;
-				var customer = order.$parent;
-				return customer.name + " - " + this.name;
-			}
-		}
-	};
-	var orderOpt = {
-		children: {items: itemOpt}
-	};
-	var customerOpt = {
-		children: {orders: orderOpt}
-	};
-	$(".customer").dataview(customer, customerOpt);
+	$(".customer").dataview(customer);
 
-	// 局部更新：只更新一个item
-	customer.orders[0].items[0].name += " - updated";
-	$(".customer .order:first .item:first").dataview();
-
-	// 只更新一个order:
+	// 更新一些数据
 	++ customer.orders[0].amount;
-	customer.orders[0].items[0].name += " - updated2";
+	customer.orders[0].items[0].name += " - updated";
+
+	// 视图局部更新：只更新一个item
+	var jitem = $(".customer .order:first .item:first");
+	jitem.dataview();
+
+	// 取DOM绑定的item数据
+	var itemData = jitem.dataview('getData');
+	// 通过 $parent 取上层数据
+	var orderData = itemData.$parent;
+	var data = orderData.$parent;
+
+	// 视图局部更新：只更新一个order:
 	$(".customer .order:first").dataview();
 
 	// 全部更新
 	$(".customer").dataview();
 ```
 
-## 常见错误
+上面只是多层次数据的简单的用法介绍，通过子对象的`$parent`属性可以取到上次对象。
+实际使用时，常会把这些特性同计算属性、事件绑定结合起来，你会发现它会让取数据和更新视图的代码简单、灵活、易懂。
 
-生成的DOM有混乱：常常由标签未闭合导致
+## 结语
+
+作为一个超轻量级的具有数据驱动视图概念的库，推荐在项目中使用，可为让你的代码更清晰简练。
+上面只是一个简单的介绍，更多如计算属性等功能可参考它的文档。
+
+附github地址（其中有源码、文档和示例代码）：
+
+	https://github.com/skyshore2001/jquery-dataview
+

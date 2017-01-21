@@ -1,13 +1,23 @@
-all: README.md jquery-dataview.min.js
+SRC=jquery-dataview.js
+REL=$(SRC:.js=.min.js)
+DOC=$(SRC:.js=.html) README.html
 
 JSMIN=tool/jsmin
 
+all: README.md $(REL) $(DOC)
+
 clean:
-	rm -rf README.md jquery-dataview.min.js
+	-rm -rf $(REL) $(DOC)
 
-README.md: jquery-dataview.js tool/gen-readme.pl
-	perl tool/gen-readme.pl $< > $@
+#README.md: $(SRC) tool/gen-readme.pl
+#	perl tool/gen-readme.pl $< > $@
 
-jquery-dataview.min.js: jquery-dataview.js
+%.html: %.md h.inc
+	perl tool/filter-md.pl $< | pandoc -f markdown -t html -s --toc -N -H h.inc -o $@
+
+%.html: %.js
+	jdcloud-gendoc $^ > $@
+
+%.min.js: %.js
 	sh -c "$(JSMIN)" < $< > $@
 

@@ -1,0 +1,203 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>jquery-dataview 数据视图插件 - 数据填充与视图更新利器</title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="header">
+<h1 class="title">jquery-dataview 数据视图插件 - 数据填充与视图更新利器</h1>
+</div>
+<div id="TOC">
+<ul>
+<li><a href="#为dom对象填充数据"><span class="toc-section-number">1</span> 为DOM对象填充数据</a></li>
+<li><a href="#为模板填充数据"><span class="toc-section-number">2</span> 为模板填充数据</a></li>
+<li><a href="#循环创建条件创建条件显示"><span class="toc-section-number">3</span> 循环创建、条件创建、条件显示</a></li>
+<li><a href="#指定事件"><span class="toc-section-number">4</span> 指定事件</a></li>
+<li><a href="#多层嵌套的数据"><span class="toc-section-number">5</span> 多层嵌套的数据</a></li>
+<li><a href="#结语"><span class="toc-section-number">6</span> 结语</a></li>
+</ul>
+</div>
+<p>jquery-dataview是一个超轻量的jquery插件，用于对DOM进行数据填充与更新，也很适合根据DOM模板创建对象。</p>
+<p>与一些纯模板库（例如juicer）相比，它不仅能提供根据模板填入数据、支持循环、支持条件创建等功能，还支持绑定事件，最重要的是，在创建完DOM对象后，这些对象（称为数据视图）关联到原始数据，修改数据后，相应的视图也得以更新。</p>
+<p>与一些支持数据驱动或MVVM模式的库（例如vue）相比，它没有去做数据绑定等高级自动化的机制，那涉及诸多复杂逻辑，比如属性依赖管理等，使用者如果了解不多，很可能写出低效的代码，或触发一连串未曾预料的后果。比如在一个列表中，只更新其中一条数据的某个属性，就可能导致刷新整个列表，甚至发起与后端的多次不必要交互。</p>
+<p>jquery-dataview插件的设计理念是简单而灵活，它不采用极其复杂的自动化更新机制，而是允许人为精准控制更新时机与更新区域；同时，它最小化并压缩后仅2K不到，很适合在移动端开发使用。</p>
+<p>下面介绍几个入门例子。</p>
+<h1 id="为dom对象填充数据"><span class="header-section-number">1</span> 为DOM对象填充数据</h1>
+<p>例：对一个DOM赋值</p>
+<p>HTML:</p>
+<div class="sourceCode"><pre class="sourceCode html"><code class="sourceCode html">    <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">&quot;customer&quot;</span><span class="kw">&gt;</span>
+        <span class="kw">&lt;p&gt;</span>id=<span class="kw">&lt;span</span><span class="ot"> name=</span><span class="st">&quot;id&quot;</span><span class="kw">&gt;&lt;/span&gt;&lt;/p&gt;</span>
+        <span class="kw">&lt;p&gt;</span>name=<span class="kw">&lt;span</span><span class="ot"> name=</span><span class="st">&quot;name&quot;</span><span class="kw">&gt;&lt;/span&gt;&lt;/p&gt;</span>
+    <span class="kw">&lt;/div&gt;</span></code></pre></div>
+<p>JS填充数据:</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript">    <span class="kw">var</span> customer <span class="op">=</span> <span class="op">{</span> <span class="dt">id</span><span class="op">:</span> <span class="dv">1001</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">&quot;SAP AG&quot;</span> <span class="op">};</span>
+    <span class="at">$</span>(<span class="st">&quot;.customer&quot;</span>).<span class="at">dataview</span>(customer)<span class="op">;</span></code></pre></div>
+<p>它会递归遍历所有带name属性的结点，如<code>&lt;span name=&quot;id&quot;&gt;&lt;/span&gt;</code>会用<code>customer.id</code>为其赋值。</p>
+<p>JS修改数据后，可无参数调用dataview来刷新显示：</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript">    <span class="va">customer</span>.<span class="at">name</span> <span class="op">=</span> <span class="st">&quot;SAP China&quot;</span><span class="op">;</span>
+    <span class="at">$</span>(<span class="st">&quot;.customer&quot;</span>).<span class="at">dataview</span>()<span class="op">;</span></code></pre></div>
+<p>获取DOM绑定的数据：</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript">    <span class="kw">var</span> data <span class="op">=</span> <span class="at">$</span>(<span class="st">&quot;.customer&quot;</span>).<span class="at">dataview</span>(<span class="st">&#39;getData&#39;</span>)<span class="op">;</span></code></pre></div>
+<h1 id="为模板填充数据"><span class="header-section-number">2</span> 为模板填充数据</h1>
+<p>这个例子在项目中更加常用，展示根据模板创建DOM、填充数据并插入文档中。</p>
+<p>HTML: 客户列表</p>
+<div class="sourceCode"><pre class="sourceCode html"><code class="sourceCode html">    <span class="kw">&lt;div</span><span class="ot"> id=</span><span class="st">&quot;divCustomers&quot;</span><span class="kw">&gt;&lt;/div&gt;</span>
+
+    <span class="kw">&lt;style</span><span class="ot"> type=</span><span class="st">&quot;text/template&quot;</span><span class="ot"> id=</span><span class="st">&quot;tplCustomer&quot;</span><span class="kw">&gt;</span>
+        &lt;div class=<span class="st">&quot;customer&quot;</span>&gt;
+            &lt;p&gt;id=&lt;span name=<span class="st">&quot;id&quot;</span>&gt;&lt;/span&gt;&lt;/p&gt;
+            &lt;p&gt;name=&lt;span name=<span class="st">&quot;name&quot;</span>&gt;&lt;/span&gt;&lt;/p&gt;
+        &lt;/div&gt;
+    <span class="kw">&lt;/style&gt;</span></code></pre></div>
+<p>JS: 根据“客户”模板创建客户并插入列表中。</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript">    <span class="kw">var</span> customers <span class="op">=</span> [
+        <span class="op">{</span> <span class="dt">id</span><span class="op">:</span> <span class="dv">1001</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">&quot;SAP AG&quot;</span> <span class="op">},</span>
+        <span class="op">{</span> <span class="dt">id</span><span class="op">:</span> <span class="dv">2001</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">&quot;Oracle CO&quot;</span> <span class="op">}</span>
+    ]<span class="op">;</span>
+    <span class="kw">var</span> jtplCustomer <span class="op">=</span> <span class="at">$</span>(<span class="at">$</span>(<span class="st">&quot;#tplCustomer&quot;</span>).<span class="at">html</span>())<span class="op">;</span>
+    <span class="kw">var</span> jparent <span class="op">=</span> <span class="at">$</span>(<span class="st">&quot;#divCustomers&quot;</span>)<span class="op">;</span>
+    <span class="va">$</span>.<span class="at">each</span>(customers<span class="op">,</span> <span class="kw">function</span> (i<span class="op">,</span> customer) <span class="op">{</span>
+        <span class="va">jtplCustomer</span>.<span class="at">clone</span>()
+            .<span class="at">dataview</span>(customer)
+            .<span class="at">appendTo</span>(jparent)<span class="op">;</span>
+    <span class="op">}</span>)<span class="op">;</span></code></pre></div>
+<h1 id="循环创建条件创建条件显示"><span class="header-section-number">3</span> 循环创建、条件创建、条件显示</h1>
+<p>子对象数组可以以<code>dv-for</code>属性来指定循环展开。</p>
+<p>dv-if及dv-show属性：根据该属性的值计算是否创建或显示该结点。</p>
+<p>例：使用dv-for, dv-if, dv-show等标签：</p>
+<p>HTML:</p>
+<div class="sourceCode"><pre class="sourceCode html"><code class="sourceCode html">    <span class="kw">&lt;div</span><span class="ot"> id=</span><span class="st">&quot;divCustomers&quot;</span><span class="kw">&gt;</span>
+        <span class="kw">&lt;div</span><span class="ot"> dv-for=</span><span class="st">&quot;customers&quot;</span><span class="ot"> dv-if=</span><span class="st">&quot;id&gt;=1000&quot;</span><span class="ot"> class=</span><span class="st">&quot;customer&quot;</span><span class="kw">&gt;</span>
+            <span class="kw">&lt;li&gt;</span>
+                <span class="kw">&lt;span</span><span class="ot"> dv-show=</span><span class="st">&quot;id</span><span class="er">&lt;</span><span class="st">=2000&quot;</span><span class="kw">&gt;</span>id=<span class="kw">&lt;span</span><span class="ot"> name=</span><span class="st">&quot;id&quot;</span><span class="kw">&gt;&lt;/span&gt;&lt;/span&gt;</span>
+                name=<span class="kw">&lt;span</span><span class="ot"> name=</span><span class="st">&quot;name&quot;</span><span class="kw">&gt;&lt;/span&gt;</span>
+            <span class="kw">&lt;/li&gt;</span>
+        <span class="kw">&lt;/div&gt;</span>
+    <span class="kw">&lt;/div&gt;</span></code></pre></div>
+<p>JS:</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript">    <span class="kw">var</span> data <span class="op">=</span> <span class="op">{</span>
+        <span class="dt">customers</span><span class="op">:</span> [
+            <span class="op">{</span> <span class="dt">id</span><span class="op">:</span> <span class="dv">1</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">&quot;Olive CO&quot;</span> <span class="op">},</span>
+            <span class="op">{</span> <span class="dt">id</span><span class="op">:</span> <span class="dv">1001</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">&quot;SAP AG&quot;</span> <span class="op">},</span>
+            <span class="op">{</span> <span class="dt">id</span><span class="op">:</span> <span class="dv">2001</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">&quot;Oracle CO&quot;</span> <span class="op">}</span>
+        ]
+    <span class="op">};</span>
+    <span class="at">$</span>(<span class="st">&quot;#divCustomers&quot;</span>).<span class="at">dataview</span>(data)<span class="op">;</span></code></pre></div>
+<p>上例中，由data.customers子数组循环创建DOM，其中<code>id=1</code>的customer没有创建，因为不满足<code>dv-if=&quot;id&gt;=1000&quot;</code>的条件；而<code>id=2001</code>的那个customer由于不满足<code>dv-show=&quot;id&lt;=2000&quot;</code>的条件，因而id没有显示出来。</p>
+<h1 id="指定事件"><span class="header-section-number">4</span> 指定事件</h1>
+<p>dataview不仅绑定数据，还可以用<code>dv-on</code>属性绑定事件，在JS中使用选项<code>events</code>与其对应。</p>
+<div class="sourceCode"><pre class="sourceCode html"><code class="sourceCode html">    <span class="kw">&lt;div</span><span class="ot"> dv-on=</span><span class="st">&quot;liOrder_click&quot;</span><span class="kw">&gt;&lt;/div&gt;</span></code></pre></div>
+<p>事件名必须是<code>{对象名}_{事件名}</code>的格式。 上面代码最终相当于调用<code>jo.on(&quot;click&quot;, data, liOrder_click)</code>，绑定的数据会通过event.data传递给回调函数，因而在回调函数中处理数据特别方便。</p>
+<p>用到的函数必须通过<code>events</code>选项定义：</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript">    <span class="kw">var</span> events <span class="op">=</span> <span class="op">{</span>
+        <span class="dt">liOrder_click</span><span class="op">:</span> <span class="kw">function</span> (ev) <span class="op">{</span>
+            <span class="kw">var</span> order <span class="op">=</span> <span class="va">ev</span>.<span class="at">data</span><span class="op">;</span> <span class="co">// 等同于 $(this).dataview(&#39;getData&#39;);</span>
+            <span class="co">// ...</span>
+        <span class="op">}</span>
+    <span class="op">};</span>
+    <span class="va">jo</span>.<span class="at">dataview</span>(data<span class="op">,</span> <span class="op">{</span><span class="dt">events</span><span class="op">:</span> events<span class="op">}</span>)<span class="op">;</span></code></pre></div>
+<p>与直接使用原生支持的onclick属性相比，使用dv-on属性的好处是事件处理函数不必是全局函数，而且事件处理函数的参数<code>ev.data</code>即是DOM绑定的数据，非常方便。</p>
+<h1 id="多层嵌套的数据"><span class="header-section-number">5</span> 多层嵌套的数据</h1>
+<p>对复杂的多层次嵌套数据的支持是dataview插件的一大亮点。 通过精巧的设计，它不仅做到填充数据时特别简单，而且在更新数据时，允许自由地更新任意区域，行为易懂且效率很高。</p>
+<p>JS数据：一个customer-客户，它包含id, name等普通属性，包含一个子对象addr-地址信息，还包含一个子对象数组orders-订单。 每个订单中，又包含一个子对象数组items-物料信息。</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript">    <span class="kw">var</span> customer <span class="op">=</span> <span class="op">{</span>
+        <span class="dt">id</span><span class="op">:</span> <span class="dv">1001</span><span class="op">,</span> 
+        <span class="dt">name</span><span class="op">:</span> <span class="st">&quot;SAP AG&quot;</span><span class="op">,</span>
+        <span class="dt">addr</span><span class="op">:</span> <span class="op">{</span><span class="dt">country</span><span class="op">:</span> <span class="st">&quot;CN&quot;</span><span class="op">,</span> <span class="dt">city</span><span class="op">:</span> <span class="st">&quot;Shanghai&quot;</span><span class="op">},</span>
+        <span class="dt">orders</span><span class="op">:</span> [
+            <span class="op">{</span><span class="dt">id</span><span class="op">:</span> <span class="dv">1</span><span class="op">,</span> <span class="dt">amount</span><span class="op">:</span> <span class="dv">9000</span><span class="op">,</span> <span class="dt">items</span><span class="op">:</span> [
+                <span class="op">{</span><span class="dt">id</span><span class="op">:</span> <span class="dv">101</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">&quot;item 101&quot;</span><span class="op">},</span>
+                <span class="op">{</span><span class="dt">id</span><span class="op">:</span> <span class="dv">102</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">&quot;item 102&quot;</span><span class="op">}</span>
+            ]<span class="op">},</span>
+            <span class="op">{</span><span class="dt">id</span><span class="op">:</span> <span class="dv">2</span><span class="op">,</span> <span class="dt">amount</span><span class="op">:</span> <span class="dv">11000</span><span class="op">,</span> <span class="dt">items</span><span class="op">:</span> [
+                <span class="op">{</span><span class="dt">id</span><span class="op">:</span> <span class="dv">201</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">&quot;item 201&quot;</span><span class="op">}</span>
+            ]<span class="op">}</span>
+        ]
+    <span class="op">}</span></code></pre></div>
+<p>HTML数据视图，展示客户、订单、物料三层数据：</p>
+<div class="sourceCode"><pre class="sourceCode html"><code class="sourceCode html">    <span class="kw">&lt;div</span><span class="ot"> class=</span><span class="st">&quot;customer&quot;</span><span class="kw">&gt;</span>
+        <span class="kw">&lt;p&gt;</span> name: <span class="kw">&lt;span</span><span class="ot"> name=</span><span class="st">&quot;name&quot;</span><span class="kw">&gt;&lt;/span&gt;</span>  <span class="kw">&lt;/p&gt;</span>
+        <span class="kw">&lt;p&gt;</span> addr: <span class="kw">&lt;span</span><span class="ot"> name=</span><span class="st">&quot;addr.country&quot;</span><span class="kw">&gt;&lt;/span&gt;</span> / <span class="kw">&lt;span</span><span class="ot"> name=</span><span class="st">&quot;addr.city&quot;</span><span class="kw">&gt;&lt;/span&gt;</span> <span class="kw">&lt;/p&gt;</span>
+        <span class="kw">&lt;ul&gt;</span>
+            <span class="kw">&lt;li</span><span class="ot"> dv-for=</span><span class="st">&quot;orders&quot;</span><span class="ot"> class=</span><span class="st">&quot;order&quot;</span><span class="kw">&gt;</span>
+                <span class="kw">&lt;p&gt;</span>order id=<span class="kw">&lt;span</span><span class="ot"> name=</span><span class="st">&quot;id&quot;</span><span class="kw">&gt;&lt;/span&gt;</span>, amount=<span class="kw">&lt;span</span><span class="ot"> name=</span><span class="st">&quot;amount&quot;</span><span class="kw">&gt;&lt;/span&gt;&lt;/p&gt;</span>
+                <span class="kw">&lt;ul&gt;</span>
+                    <span class="kw">&lt;li</span><span class="ot"> dv-for=</span><span class="st">&quot;items&quot;</span><span class="ot"> class=</span><span class="st">&quot;item&quot;</span><span class="kw">&gt;</span>
+                        <span class="kw">&lt;p&gt;</span>item id=<span class="kw">&lt;span</span><span class="ot"> name=</span><span class="st">&quot;id&quot;</span><span class="kw">&gt;&lt;/span&gt;&lt;/p&gt;</span>
+                        <span class="kw">&lt;p&gt;</span>item name=<span class="kw">&lt;span</span><span class="ot"> name=</span><span class="st">&quot;name&quot;</span><span class="kw">&gt;&lt;/span&gt;&lt;/p&gt;</span>
+                    <span class="kw">&lt;/li&gt;</span>
+                <span class="kw">&lt;/ul&gt;</span>
+            <span class="kw">&lt;/li&gt;</span>
+        <span class="kw">&lt;/ul&gt;</span>
+    <span class="kw">&lt;/div&gt;</span></code></pre></div>
+<p>JS:</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript">    <span class="at">$</span>(<span class="st">&quot;.customer&quot;</span>).<span class="at">dataview</span>(customer)<span class="op">;</span>
+
+    <span class="co">// 更新一些数据</span>
+    <span class="op">++</span> <span class="va">customer</span>.<span class="at">orders</span>[<span class="dv">0</span>].<span class="at">amount</span><span class="op">;</span>
+    <span class="va">customer</span>.<span class="at">orders</span>[<span class="dv">0</span>].<span class="at">items</span>[<span class="dv">0</span>].<span class="at">name</span> <span class="op">+=</span> <span class="st">&quot; - updated&quot;</span><span class="op">;</span>
+
+    <span class="co">// 视图局部更新：只更新一个item</span>
+    <span class="kw">var</span> jitem <span class="op">=</span> <span class="at">$</span>(<span class="st">&quot;.customer .order:first .item:first&quot;</span>)<span class="op">;</span>
+    <span class="va">jitem</span>.<span class="at">dataview</span>()<span class="op">;</span>
+
+    <span class="co">// 取DOM绑定的item数据</span>
+    <span class="kw">var</span> itemData <span class="op">=</span> <span class="va">jitem</span>.<span class="at">dataview</span>(<span class="st">&#39;getData&#39;</span>)<span class="op">;</span>
+    <span class="co">// 通过 $parent 取上层数据</span>
+    <span class="kw">var</span> orderData <span class="op">=</span> <span class="va">itemData</span>.<span class="at">$parent</span><span class="op">;</span>
+    <span class="kw">var</span> data <span class="op">=</span> <span class="va">orderData</span>.<span class="at">$parent</span><span class="op">;</span>
+
+    <span class="co">// 视图局部更新：只更新一个order:</span>
+    <span class="at">$</span>(<span class="st">&quot;.customer .order:first&quot;</span>).<span class="at">dataview</span>()<span class="op">;</span>
+
+    <span class="co">// 全部更新</span>
+    <span class="at">$</span>(<span class="st">&quot;.customer&quot;</span>).<span class="at">dataview</span>()<span class="op">;</span></code></pre></div>
+<p>上面只是多层次数据的简单的用法介绍，通过子对象的<code>$parent</code>属性可以取到上次对象。 实际使用时，常会把这些特性同计算属性、事件绑定结合起来，你会发现它会让取数据和更新视图的代码简单、灵活、易懂。</p>
+<h1 id="结语"><span class="header-section-number">6</span> 结语</h1>
+<p>作为一个超轻量级的具有数据驱动视图概念的库，推荐在项目中使用，可为让你的代码更清晰简练。 上面只是一个简单的介绍，更多如计算属性等功能可参考它的文档。</p>
+<p>附github地址（其中有源码、文档和示例代码）：</p>
+<pre><code>https://github.com/skyshore2001/jquery-dataview</code></pre>
+</body>
+</html>
