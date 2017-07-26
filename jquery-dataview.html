@@ -33,7 +33,7 @@ code {
 </head>
 
 <h1>jquery-dataview 数据视图</h1>
-<div>最后更新：2017-01-21</div>
+<div>最后更新：2017-07-26</div>
 <h2>Modules</h2>
 <div class="toc">
 <p><a href="#jquery-dataview">jquery-dataview (module)</a></p>
@@ -50,13 +50,14 @@ code {
 <h2 id="jquery-dataview">@module jquery-dataview 数据视图</h2><div class="toc"><p style="margin-left:0em"><a href="#jquery-dataview-1 为DOM对象填充数据">1 为DOM对象填充数据</a></p>
 <p style="margin-left:0em"><a href="#jquery-dataview-2 为模板填充数据">2 为模板填充数据</a></p>
 <p style="margin-left:0em"><a href="#jquery-dataview-3 计算属性">3 计算属性</a></p>
-<p style="margin-left:0em"><a href="#jquery-dataview-4 访问子对象">4 访问子对象</a></p>
-<p style="margin-left:0em"><a href="#jquery-dataview-5 循环创建、条件创建、条件显示">5 循环创建、条件创建、条件显示</a></p>
-<p style="margin-left:2em"><a href="#jquery-dataview-5.1 条件分支">5.1 条件分支</a></p>
-<p style="margin-left:0em"><a href="#jquery-dataview-6 指定事件">6 指定事件</a></p>
-<p style="margin-left:0em"><a href="#jquery-dataview-7 获取数据">7 获取数据</a></p>
-<p style="margin-left:0em"><a href="#jquery-dataview-8 多层嵌套的数据">8 多层嵌套的数据</a></p>
-<p style="margin-left:0em"><a href="#jquery-dataview-9 常见错误">9 常见错误</a></p>
+<p style="margin-left:0em"><a href="#jquery-dataview-4 属性格式化显示">4 属性格式化显示</a></p>
+<p style="margin-left:0em"><a href="#jquery-dataview-5 访问子对象">5 访问子对象</a></p>
+<p style="margin-left:0em"><a href="#jquery-dataview-6 循环创建、条件创建、条件显示">6 循环创建、条件创建、条件显示</a></p>
+<p style="margin-left:2em"><a href="#jquery-dataview-6.1 条件分支">6.1 条件分支</a></p>
+<p style="margin-left:0em"><a href="#jquery-dataview-7 指定事件">7 指定事件</a></p>
+<p style="margin-left:0em"><a href="#jquery-dataview-8 获取数据">8 获取数据</a></p>
+<p style="margin-left:0em"><a href="#jquery-dataview-9 多层嵌套的数据">9 多层嵌套的数据</a></p>
+<p style="margin-left:0em"><a href="#jquery-dataview-10 常见错误">10 常见错误</a></p>
 </div>
 <p>jquery插件，用于对DOM进行数据填充与更新，也很适合根据DOM模板创建对象。</p>
 <p>特点：</p>
@@ -130,7 +131,50 @@ code {
     // fullname也得到更新.</code></pre>
 <p>在初始化时，做为计算属性的函数会自动添加到相应的数据上。<br />
 在更新视图时，如果发现name属性指定的是一个函数，则以调用后的值来填充。</p>
-<h4 id="jquery-dataview-4 访问子对象">4 访问子对象</h4>
+<h4 id="jquery-dataview-4 属性格式化显示">4 属性格式化显示</h4>
+<p>在JS中通过<code>formats</code>选项指定属性的格式化函数。</p>
+<p>HTML:</p>
+<pre><code class="language-html">    &lt;div class="order"&gt;
+        &lt;p&gt;创建日期：&lt;span name="createTm" dv-format="dateD"&gt;&lt;/span&gt;&lt;/p&gt;
+        &lt;p&gt;结束日期：&lt;span name="endTm" dv-format="dateD"&gt;&lt;/span&gt;&lt;/p&gt;
+        &lt;p&gt;总时长：&lt;span name="endTm" dv-format="interval"&gt;&lt;/span&gt;&lt;/p&gt;
+    &lt;/div&gt;</code></pre>
+<p>JS: 定义format函数</p>
+<pre><code class="language-javascript">    var order = { id: 1001, createTm: "2017/01/03 10:20:30", endTm: "2017/01/10 18:20:30" };
+    // 先为属性转换格式
+    order.createTm = new Date(order.createTm);
+    order.endTm = new Date(order.endTm);
+
+    var opt = {
+        formats: {
+            dateD: function (val) {
+                return val.getFullYear() + "/" + (val.getMonth()+1) + "/" + val.getDate();
+            },
+            interval: function (val) {
+                // this表示当前层次数据
+                return Math.round((this.endTm - this.createTm) / (1000*3600*24)) + "天";
+            }
+        }
+    };
+    var jo = $(".order").dataview(order, opt);
+
+    order.endTm = new Date("2017/01/11 18:20:30");
+    // 局部更新
+    jo.find("[name=endTm][dv-format=interval]").dataview(); // “总时长”显示已更新，“结束日期”显示未更新
+    // 全部更新
+    jo.dataview(); // endTm与interval均被更新.</code></pre>
+<p>上例中，显示&quot;总时长&quot;也可用计算字段实现，且更加合理，如</p>
+<pre><code class="language-html">        &lt;p&gt;总时长：&lt;span name="interval"&gt;&lt;/span&gt;&lt;/p&gt;</code></pre>
+<pre><code class="language-javascript">    var opt = {
+        formats: ...,
+        props: {
+            interval: function () {
+                // this表示当前层次数据
+                return Math.round((this.endTm - this.createTm) / (1000*3600*24)) + "天";
+            }
+        }
+    };</code></pre>
+<h4 id="jquery-dataview-5 访问子对象">5 访问子对象</h4>
 <p>假如有数据：</p>
 <pre><code class="language-javascript">    var customer = {
         id: 1001, 
@@ -140,7 +184,7 @@ code {
 <p>这里<code>addr</code>是<code>customer</code>的子对象，可以这样来显示<code>customer.addr.city</code>:</p>
 <pre><code class="language-html">    &lt;span name="addr.city"&gt;&lt;/span&gt;</code></pre>
 <p>求值时，以 <code>eval("data." + name)</code> 的方式获得值。（未使用with机制计算以免降低性能）</p>
-<h4 id="jquery-dataview-5 循环创建、条件创建、条件显示">5 循环创建、条件创建、条件显示</h4>
+<h4 id="jquery-dataview-6 循环创建、条件创建、条件显示">6 循环创建、条件创建、条件显示</h4>
 <p>子对象数组可以以<code>dv-for</code>属性来指定循环展开，每复制一个DOM，都会绑定数据到相应的子对象上。</p>
 <p>dv-if及dv-show属性：根据该属性的值计算是否保留该结点，或显示该结点。</p>
 <p>例：使用dv-for, dv-if, dv-show等标签：</p>
@@ -181,7 +225,7 @@ code {
     $(".customer").dataview(customers);</code></pre>
 <p>dv-if及dv-show属性中指定一个条件表达式，它可以比name中指定的内容要复杂，它的计算原理是：</p>
 <pre><code class="language-javascript">    with(data) { eval(val); }</code></pre>
-<h5 id="jquery-dataview-5.1 条件分支">5.1 条件分支</h5>
+<h5 id="jquery-dataview-6.1 条件分支">6.1 条件分支</h5>
 <p>除<code>dv-if</code>外，还可以使用<code>dv-elseif</code>, <code>dv-else</code>。</p>
 <p>HTML:</p>
 <pre><code class="language-html">    &lt;div dv-for="this" id="divStatus"&gt;
@@ -208,7 +252,7 @@ code {
 </li>
 <li>在同一层上，<code>dv-if</code>可以多次出现。对每项均重新计算。支持嵌套，即<code>dv-if</code>等标签也可以多次出现在不同层次中。</li>
 </ul>
-<h4 id="jquery-dataview-6 指定事件">6 指定事件</h4>
+<h4 id="jquery-dataview-7 指定事件">7 指定事件</h4>
 <p>在HTML中使用<code>dv-on</code>属性指定事件，在JS中使用选项<code>events</code>与其对应。</p>
 <pre><code class="language-html">    &lt;div dv-on="liOrder_click"&gt;&lt;/div&gt;</code></pre>
 <p>上面代码定义了<code>jo.on("click", data, liOrder_click)</code>，所有用到的函数必须通过<code>events</code>选项定义：</p>
@@ -256,7 +300,7 @@ code {
 <li>事件处理函数不必是全局函数。</li>
 <li>事件处理函数的参数<code>ev.data</code>即是DOM绑定的数据，使用很方便。</li>
 </ul>
-<h4 id="jquery-dataview-7 获取数据">7 获取数据</h4>
+<h4 id="jquery-dataview-8 获取数据">8 获取数据</h4>
 <pre><code class="language-javascript">    // 获取DOM关联的数据
     var data = jo.dataview('getData');
 
@@ -265,7 +309,7 @@ code {
     var formData = jo.dataview('getFormData');
     // 获取用户输入的数据与原始数据差异部分。
     var formDataDiff = jo.dataview('getFormData', {diff: true});</code></pre>
-<h4 id="jquery-dataview-8 多层嵌套的数据">8 多层嵌套的数据</h4>
+<h4 id="jquery-dataview-9 多层嵌套的数据">9 多层嵌套的数据</h4>
 <p>每个对象数组是一个嵌套层次。</p>
 <ul>
 <li>可通过数据的 <code>$parent</code> 属性访问上层数据。</li>
@@ -341,18 +385,24 @@ code {
 
     // 全部更新
     $(".customer").dataview();</code></pre>
-<h4 id="jquery-dataview-9 常见错误">9 常见错误</h4>
+<p>注意：</p>
+<ul>
+<li>在为多层嵌套数据设置选项时，如果某层未指定opt，可使用上一层的的选项。如果指定了opt，则上一层的选项无效。<br />
+因而，假如上一层指定了opt={formats: ...}，在本层未指定opt时，可以使用上层的formats，而如果本层指定了opt={events: ...}，则上层指定的那些formats无法使用。</li>
+</ul>
+<h4 id="jquery-dataview-10 常见错误">10 常见错误</h4>
 <p>生成的DOM有混乱：常常由标签未闭合导致</p><hr>
 <h2 id="version">@fn version()</h2>
 <p>取版本号:</p>
 <pre><code>var ver = jo.dataview("version");</code></pre><hr>
-<h2 id="getData">@fn getData(exact?=false)</h2>
+<h2 id="getData">@fn getData(exact?=false, ret?)</h2>
 <p>取DOM元素对应的数据。<br />
 可对dataview对象或其任意子元素调用该函数，返回该元素所在层次对应的数据。</p>
 <p>如果取到的是子数组中的数据，可以通过<code>$parent</code>属性取上层数据。</p>
 <pre><code>var data = jo.dataview('getData');
 var parentData = data.$parent;</code></pre>
-<p class="param"><strong>@param exact</strong> ?=false 查找本结点上的数据，如果没有会继续查找父结点，直到遍历完父结点。设置为true禁止查找父结点。</p><hr>
+<p class="param"><strong>@param exact</strong> ?=false 查找本结点上的数据，如果没有会继续查找父结点，直到遍历完父结点。设置为true禁止查找父结点。</p>
+<p class="param"><strong>@param ret</strong> ? 输出参数，如果传入一个对象，则会设置 {data, jo, opt} 其中data与返回值一致。jo为包含data的结点，可能是当前结点或其父结点等，opt为该结点上设置的选项。</p><hr>
 <h2 id="$.fn.dataview">@fn $.fn.dataview(data, opt?)</h2>
 <p class="alias"><strong>@alias <a id="$.fn.dataview">$.fn.dataview</a></strong> (method, param1, ...)</p>
 <p class="param"><strong>@param opt=</strong> {props, events}</p>

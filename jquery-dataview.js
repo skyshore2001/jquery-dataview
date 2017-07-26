@@ -116,6 +116,65 @@ JS: 定义fullname属性
 在初始化时，做为计算属性的函数会自动添加到相应的数据上。
 在更新视图时，如果发现name属性指定的是一个函数，则以调用后的值来填充。
 
+## 属性格式化显示
+
+在JS中通过`formats`选项指定属性的格式化函数。
+
+HTML:
+
+```html
+	<div class="order">
+		<p>创建日期：<span name="createTm" dv-format="dateD"></span></p>
+		<p>结束日期：<span name="endTm" dv-format="dateD"></span></p>
+		<p>总时长：<span name="endTm" dv-format="interval"></span></p>
+	</div>
+```
+
+JS: 定义format函数
+
+```javascript
+	var order = { id: 1001, createTm: "2017/01/03 10:20:30", endTm: "2017/01/10 18:20:30" };
+	// 先为属性转换格式
+	order.createTm = new Date(order.createTm);
+	order.endTm = new Date(order.endTm);
+
+	var opt = {
+		formats: {
+			dateD: function (val) {
+				return val.getFullYear() + "/" + (val.getMonth()+1) + "/" + val.getDate();
+			},
+			interval: function (val) {
+				// this表示当前层次数据
+				return Math.round((this.endTm - this.createTm) / (1000*3600*24)) + "天";
+			}
+		}
+	};
+	var jo = $(".order").dataview(order, opt);
+
+	order.endTm = new Date("2017/01/11 18:20:30");
+	// 局部更新
+	jo.find("[name=endTm][dv-format=interval]").dataview(); // “总时长”显示已更新，“结束日期”显示未更新
+	// 全部更新
+	jo.dataview(); // endTm与interval均被更新.
+```
+
+上例中，显示"总时长"也可用计算字段实现，且更加合理，如
+```html
+		<p>总时长：<span name="interval"></span></p>
+```
+
+```javascript
+	var opt = {
+		formats: ...,
+		props: {
+			interval: function () {
+				// this表示当前层次数据
+				return Math.round((this.endTm - this.createTm) / (1000*3600*24)) + "天";
+			}
+		}
+	};
+```
+
 ## 访问子对象
 
 假如有数据：
@@ -416,6 +475,11 @@ JS:
 	$(".customer").dataview();
 ```
 
+注意：
+
+- 在为多层嵌套数据设置选项时，如果某层未指定opt，可使用上一层的的选项。如果指定了opt，则上一层的选项无效。
+ 因而，假如上一层指定了opt={formats: ...}，在本层未指定opt时，可以使用上层的formats，而如果本层指定了opt={events: ...}，则上层指定的那些formats无法使用。
+
 ## 常见错误
 
 生成的DOM有混乱：常常由标签未闭合导致
@@ -453,7 +517,7 @@ var m_ifstack = [];
 var m_ifval = false;
 
 /**
-@fn getData(exact?=false)
+@fn getData(exact?=false, ret?)
 
 取DOM元素对应的数据。
 可对dataview对象或其任意子元素调用该函数，返回该元素所在层次对应的数据。
@@ -464,25 +528,33 @@ var m_ifval = false;
 	var parentData = data.$parent;
 
 @param exact?=false 查找本结点上的数据，如果没有会继续查找父结点，直到遍历完父结点。设置为true禁止查找父结点。
+@param ret? 输出参数，如果传入一个对象，则会设置 {data, jo, opt} 其中data与返回值一致。jo为包含data的结点，可能是当前结点或其父结点等，opt为该结点上设置的选项。
 
  */
-function getData(jo, exact)
+function getData(jo, exact, ret)
 {
-	if (exact)
-		return jo.data("dvData_");
-
 	var dvData;
-	while ( (dvData = jo.data("dvData_")) === undefined) {
+	while (true) {
+		dvData = jo.data("dvData_");
+		if (exact || dvData !== undefined)
+			break;
 		jo = jo.parent();
 		if (jo.size() == 0)
 			break;
 	}
+	if (ret) {
+		ret.data = dvData;
+		ret.opt = jo.data("dvOpt_");
+		ret.jo = jo;
+	}
 	return dvData;
 }
 
-function setData(jo, data)
+function setData(jo, data, opt)
 {
 	jo.data("dvData_", data);
+	if (opt)
+		jo.data("dvOpt_", opt);
 }
 
 /*
@@ -527,18 +599,20 @@ function setDataView(jo, data, opt, doInit, doSetData)
 	}
 
 	if (doInit && doSetData) {
-		setData(jo, data);
+		// 顶层及dv-for结点才会赋值
+		setData(jo, data, opt);
 		if (opt.props) {
 			$.extend(data, opt.props);
 		}
 	}
 
-	// 如果已设置关联数据，则使用它替代data
-	if (!doInit && getData(jo, true) != null) {
-		var dvData = getData(jo);
-		if (dvData==null)
+	// 更新时，取最近结点的data和opt
+	if (!doInit) {
+		var rv = {};
+		if (getData(jo, null, rv) == null)
 			$.error("*** dataview does not init");
-		data = dvData;
+		opt = rv.opt;
+		data = rv.data;
 	}
 
 	var val, val1;
@@ -592,7 +666,7 @@ function setDataView(jo, data, opt, doInit, doSetData)
 	}
 
 	if (jo.attr("name")) {
-		setItemContentByName(jo, data);
+		setItemContentByName(jo, data, opt);
 	}
 
 	if (doInit) {
@@ -623,9 +697,10 @@ function evalSimple(data, name)
 	return eval('data.' + name);
 }
 
-function setItemContentByName(ji, data)
+function setItemContentByName(ji, data, opt)
 {
 	var name = ji.attr("name");
+	var fmt = ji.attr("dv-format");
 	var content = null;
 	if (name.indexOf('.') < 0) {
 		content =  data[name];
@@ -635,7 +710,14 @@ function setItemContentByName(ji, data)
 	}
 	// 是计算属性
 	if ($.isFunction(content)) {
-		content = content.apply(data);
+		content = content.call(data);
+	}
+	if (fmt) {
+		var fn = opt && opt.formats && opt.formats[fmt];
+		if (fn == null) {
+			$.error("*** no format for item [name=" + name + "]: " + fmt);
+		}
+		content = fn.call(data, content);
 	}
 	setItemContent(ji, content);
 }

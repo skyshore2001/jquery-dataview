@@ -39,12 +39,18 @@
 <!-- test1 {{{ -->
 <div id="test1" class="test">
 	<hr>
-	test1: DOM填充, 支持子对象
+	test1: DOM填充, 支持子对象; 属性格式化dv-format
 	<li class="customer">
 		<p>id=<span name="id"></span></p>
 		<p>name=<span name="name"></span></p>
 		<p>city=<span name="addr.city"></span></p>
 	</li>
+
+	<div class="order">
+		<p>创建日期：<span name="createTm" dv-format="dateD"></span></p>
+		<p>结束日期：<span name="endTm" dv-format="dateD"></span></p>
+		<p>总时长：<span name="endTm" dv-format="interval"></span></p>
+	</div>
 </div>
 
 <script>
@@ -70,7 +76,39 @@ function test1()
 	var data1 = jo.find("[name=id]").dataview('getData');
 	assert(data1 === customer);
 
+	test1_format();
+
 	log("=== test1: pass");
+}
+
+function test1_format()
+{
+	var order = { id: 1001, createTm: "2017/01/03 10:20:30", endTm: "2017/01/10 18:20:30" };
+	// 先为属性转换格式
+	order.createTm = new Date(order.createTm);
+	order.endTm = new Date(order.endTm);
+
+	var opt = {
+		formats: {
+			dateD: function (val) {
+				return val.getFullYear() + "/" + (val.getMonth()+1) + "/" + val.getDate();
+			},
+			interval: function (val) {
+				// this表示当前层次数据
+				return Math.round((this.endTm - this.createTm) / (1000*3600*24)) + "天";
+			}
+		}
+	};
+	var jo = $("#test1 .order").dataview(order, opt);
+	assert(jo.find("[name=createTm]").html() == "2017/1/3");
+	assert(jo.find("[name=endTm]:eq(0)").html() == "2017/1/10");
+	assert(jo.find("[name=endTm]:eq(1)").html() == "7天");
+
+	// 更新：
+	order.endTm = new Date("2017/01/11 18:20:30");
+	jo.dataview();
+	assert(jo.find("[name=endTm]:eq(0)").html() == "2017/1/11");
+	assert(jo.find("[name=endTm]:eq(1)").html() == "8天");
 }
 </script>
 <!-- test1 }}} -->
@@ -231,7 +269,7 @@ function test4()
 				<ul>
 					<li dv-for="items" class="item">
 						<p>item id=<span name="id"></span></p>
-						<p>item name=<span name="name"></span></p>
+						<p>item name=<span name="name" dv-format="name"></span></p>
 						<p>fullname=<span name="fullname"></span></p>
 					</li>
 				</ul>
@@ -264,6 +302,11 @@ function test5()
 				var customer = order.$parent;
 				return customer.name + " - " + this.name;
 			}
+		},
+		formats: {
+			name: function (val) {
+				return '<b>' + val + '</b>';
+			}
 		}
 	};
 	var orderOpt = {
@@ -280,10 +323,19 @@ function test5()
 	assert(jo.find(".item").size() == 3, "生成item数目不对");
 	assert(jo.find(".item:eq(0) [name=fullname]").html() == "SAP AG - item 101", "fullname计算属性不正确");
 
-	// 局部更新：只更新一个item
-	var newName = (customer.orders[1].items[0].name += " - updated");
-	jo.find(".order:eq(1)").dataview();
-	assert(jo.find(".order:eq(1) .item:eq(0) [name=fullname]").html() == "SAP AG - " + newName, "局部更新后fullname计算属性不正确");
+	// 局部更新：只更新一个order (dv-for结点自动绑定相应数据)
+	var jo1 = jo.find(".order:eq(1) .item:eq(0)");
+	var item1 = customer.orders[1].items[0];
+	var newName = (item1.name += " - updated");
+	jo1.dataview();
+	assert(jo1.find("[name=name]").html() == "<b>" + newName + "</b>", "局部更新后name计算属性不正确");
+	assert(jo1.find("[name=fullname]").html() == "SAP AG - " + newName, "局部更新后fullname计算属性不正确");
+
+	// 局部更新：更新一个未直接绑定数据的子结点
+	newName2 = (item1.name += " - updated2");
+	jo1.find("[name=fullname]").dataview(); // 只更新fullname, 因而name显示不应变化
+	assert(jo1.find("[name=fullname]").html() == "SAP AG - " + newName2, "局部更新后fullname计算属性不正确");
+	assert(jo1.find("[name=name]").html() == "<b>" + newName + "</b>", "局部更新fullname时name不应变化");
 
 	log("=== test5: pass");
 }
