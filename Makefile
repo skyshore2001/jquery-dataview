@@ -16,7 +16,7 @@ clean:
 	perl tool/filter-md.pl $< | pandoc -f markdown -t html -s --toc -N -H h.inc -o $@
 
 %.html: %.js
-	jdcloud-gendoc $^ > $@
+	jdcloud-gendoc $^ > $@ || rm -f $@
 
 %.min.js: %.js
 	sh -c "$(JSMIN)" < $< > $@

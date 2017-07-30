@@ -422,10 +422,111 @@ function test6()
 </script>
 <!-- test6 }}} -->
 
+<!-- test7 {{{ -->
+<div id="test7" class="test">
+	<hr>
+	test7: 重新绑定数据及选项
+	<div class="customer">
+		<p>id=<span name="id"></span></p>
+		<p>name=<span name="name" dv-format="name"></span></p>
+		<p>city=<span name="addr.city" dv-on="city_click"></span></p>
+		<ul dv-for="orders">
+			<li name="dscr"></li>
+		</ul>
+	</div>
+</div>
+
+<script>
+function test7()
+{
+	var flag = 'init';
+	var customer = {
+		id: 1001, 
+		addr: {country: "CN", city: "Shanghai"},
+		orders: [{dscr: 'order1'}, {dscr: 'order2'}]
+	};
+	var opt = {
+		props: {
+			name: function () {
+				return "customer " + this.id
+			}
+		},
+		formats: {
+			name: function (val) {
+				return "[" + val + "]";
+			}
+		},
+		events: {
+			city_click: function () {
+				flag = 'city_click';
+			}
+		}
+	}
+	var jo = $("#test7 .customer");
+	jo.dataview(customer, opt);
+	assert(jo.find("[name=id]").html() == "1001");
+	assert(jo.find("[name=name]").html() == "[customer 1001]", "props或dv-format未生效");
+	assert(jo.find("[name=addr\\.city]").html() == "Shanghai");
+	assert(jo.find("[name=dscr]").size() == 2);
+	assert(jo.find("[name=dscr]:eq(1)").html() == "order2");
+
+	jo.find("[name=addr\\.city]").click();
+	assert(flag == "city_click", "dv-on绑定未生效");
+
+	customer.orders.push({dscr: "order3"});
+	jo.dataview(customer, opt);
+	assert(jo.find("[name=dscr]").size() == 3);
+	assert(jo.find("[name=dscr]:eq(2)").html() == "order3");
+
+	var customer2 = {
+		id: 1002, 
+		addr: {country: "CN", city: "Beijing"},
+		orders: [{dscr: 'order2.1'}, {dscr: 'order2.2'}, {dscr: 'order2.3'}]
+	};
+	var opt2 = {
+		props: {
+			name: function () {
+				return "CUSTOMER " + this.id
+			}
+		},
+		formats: {
+			name: function (val) {
+				return "{" + val + "}";
+			}
+		},
+		events: {
+			city_click: function () {
+				flag = 'city_click2';
+			}
+		}
+	};
+	jo.dataview(customer2, opt2);
+	assert(jo.find("[name=id]").html() == "1002");
+	assert(jo.find("[name=name]").html() == "{CUSTOMER 1002}", "props或dv-format未生效");
+	assert(jo.find("[name=addr\\.city]").html() == "Beijing");
+
+	jo.find("[name=addr\\.city]").click();
+	assert(flag == "city_click2", "dv-on重绑定未生效");
+
+	assert(jo.find("[name=dscr]").size() == 3);
+	assert(jo.find("[name=dscr]:eq(1)").html() == "order2.2");
+
+	var data = jo.dataview('getData');
+	assert(data === customer2);
+
+	var data1 = jo.find("[name=dscr]:eq(1)").dataview('getData');
+	assert(data1 === customer2.orders[1]);
+
+	log("=== test7: pass");
+}
+
+</script>
+<!-- test7 }}} -->
+
 <!-- framework {{{-->
 <script>
 var RUN_CASE = "all";
-//var RUN_CASE = "test6";
+//var RUN_CASE = "test7";
 
 
 var m_curCase;

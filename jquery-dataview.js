@@ -37,6 +37,15 @@ JS修改数据后，可无参数调用dataview来刷新显示：
 	$(".customer").dataview();
 ```
 
+也可为重新绑定数据，如:
+
+```javascript
+	var customer2 = { id: 1002, name: "Daca Tec" };
+	$(".customer").dataview(customer2);
+```
+
+TODO: 含有dv-if结点重新绑定数据会有问题，可换成dv-show。
+
 取DOM绑定的数据：
 
 ```javascript
@@ -299,6 +308,37 @@ JS:
 		<div><p dv-else>已拒绝</p></div>
 
 - 在同一层上，`dv-if`可以多次出现。对每项均重新计算。支持嵌套，即`dv-if`等标签也可以多次出现在不同层次中。
+
+### 含有子对象数组时重新绑定数据
+
+其原理是：
+对于dv-for结点，在展开后，展开结点会删除dv-for属性，加上dv-expanded属性，
+此外，会添加一个隐藏的span标签，其中保存了原始的dv-for结点，用于重新绑定数据时再展示子对象数组。
+
+注意：
+
+- 子对象数组如果更改（例如有push添加一行），无法更新，必须重新绑定。
+
+		data.customers.push({id: 99, name: "cust 99"});
+		// $("#divCustomers").dataview(); // 这样无法更新
+		$("#divCustomers").dataview(data, opt); // 需要重新绑定
+
+- 顶层不可以是dv-for结点。示例：
+
+		<div class="customer_orders">
+			<ul class="order" dv-for="this">
+				<li name="dscr"></li>
+			</ul>
+		</div>
+
+	绑定数据及更新示例：
+
+		var orders = [{dscr: 'order1'}, {dscr: 'order2'}];
+		var jo = $(".customer_orders"); // 应避免顶层是dv-for结点。
+		jo.dataview(orders); // 如果jo是$(".order")，下面就没法更新了。
+
+		orders.push({dscr: 'order3'});
+		jo.dataview(orders);
 
 ## 指定事件
 
@@ -585,16 +625,29 @@ function setDataView(jo, data, opt, doInit, doSetData)
 		}
 
 		var joRet = $([]);
+		var jtpl = jo.data("dv-template");
+		if (jtpl == null)
+			jtpl = jo;
+		// 被展开的对象失去dv-for属性，添加dv-expanded属性。
 		$.each(arrData, function (i, data1) {
-			var jo1 = jo.clone();
+			var jo1 = jtpl.clone();
 			jo1.removeAttr("dv-for"); // 不再展开
 			if (! isThis)
 				data1.$parent = data;
 			jo1 = setDataView(jo1, data1, opt1, doInit, true);
+			jo1.attr("dv-expanded", "");
 			jo1.insertBefore(jo);
 			joRet = joRet.add(jo1);
 		});
-		jo.remove();
+		// 第一次，直接以jo作为模板，再将jo删除且存在一个隐藏的span中供下次使用
+		if (jtpl === jo) {
+			// save template
+			$("<span></span>").attr("dv-for", vfor)
+				.hide()
+				.data("dv-template", jo)
+				.insertBefore(jo);
+			jo.remove();
+		}
 		return joRet;
 	}
 
@@ -660,7 +713,7 @@ function setDataView(jo, data, opt, doInit, doSetData)
 				$.error("*** no event handler: " + fname);
 			}
 			if (ms = fname.match(/_(\w+)/)) {
-				jo.on(ms[1], data, fn);
+				jo.off(ms[1]).on(ms[1], data, fn);
 			}
 		});
 	}
@@ -815,12 +868,16 @@ $.fn.extend({
 		}
 
 		// 更新操作
-		if (data == null || getData(this) != null)
+		var isBound = (getData(this) != null);
+		if (data == null && isBound)
 			return setDataView(this);
 
 		var opt1 = $.extend({}, m_defaults, opt);
 		if (this.size() != 1) {
 			$.error("*** dataview: MUST only one DOM object.");
+		}
+		if (isBound) {
+			this.find("[dv-expanded]").remove();
 		}
 		// 初次：doSetData=true设置顶层数据。
 		return setDataView(this, data, opt1, true, true);
