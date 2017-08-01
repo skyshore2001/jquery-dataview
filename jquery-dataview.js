@@ -739,8 +739,12 @@ function setDataView(jo, data, opt, doInit, doSetData)
 // 参数名用的怪异，避免与data中字段名冲突
 function evalWithin(data, code__080909)
 {
-	with (data) {
-		return eval(code__080909);
+	try {
+		with (data) {
+			return eval(code__080909);
+		}
+	} catch (ex) {
+		return;
 	}
 }
 
