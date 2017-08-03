@@ -29,6 +29,7 @@ JS填充数据:
 ```
 
 递归遍历所有带name属性的结点，如`<span name="id"></span>`会用`customer.id`为其赋值。
+特别地，name为"this"时表示数据本身。
 
 JS修改数据后，可无参数调用dataview来刷新显示：
 
@@ -611,10 +612,12 @@ function setDataView(jo, data, opt, doInit, doSetData)
 	if (doInit && (vfor = jo.attr("dv-for")) ) {
 		var isThis = (vfor == 'this');
 		var arrData = isThis? data: data[vfor];
-		if (! $.isArray(arrData)) {
+		if (arrData != null && ! $.isArray(arrData)) {
 			console.log("!!! warn: not array: " + vfor);
 			return $([]);
 		}
+		if (arrData == null)
+			arrData = [];
 		var opt1;
 		if (! isThis) {
 			opt1 = (opt.children && opt.children[vfor]) || {};
@@ -759,7 +762,10 @@ function setItemContentByName(ji, data, opt)
 	var name = ji.attr("name");
 	var fmt = ji.attr("dv-format");
 	var content = null;
-	if (name.indexOf('.') < 0) {
+	if (name == "this") {
+		content =  data;
+	}
+	else if (! /\W/.test(name)) {
 		content =  data[name];
 	}
 	else {
