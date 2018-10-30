@@ -563,7 +563,10 @@ var m_curCase;
 // type: i-info, e-error
 function log(s, type)
 {
-	console.log(s);
+	if (s.substr(0,3) == "***")
+		console.error(s);
+	else
+		console.log(s);
 	var jo = $("#divPrompt").html(s).show();
 	jo.toggleClass("error", type=="e");
 	setTimeout(function () {

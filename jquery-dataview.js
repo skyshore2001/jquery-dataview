@@ -739,7 +739,7 @@ function setDataView(jo, data, opt, doInit, doSetData)
 				$.error("*** no event handler: " + fname);
 			}
 			if (ms = fname.match(/_(\w+)/)) {
-				jo.off(ms[1]).on(ms[1], data, fn);
+				jo.off(ms[1]).on(ms[1], null, data, fn);
 			}
 		});
 	}
