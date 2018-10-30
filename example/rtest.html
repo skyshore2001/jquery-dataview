@@ -183,6 +183,17 @@ function test2()
 	</ul>
 </div>
 
+<div id="test3_1" class="test">
+	<hr>
+	test3_1: dv-for与this
+
+	<ul id="divCustomers">
+		<li dv-for="this" class="customer"><span name="this"></span></li>
+	</ul>
+	<ul id="divCustomers2">
+		<li dv-for="this" class="customer" name="this"></li>
+	</ul>
+</div>
 <script>
 function test3()
 {
@@ -202,6 +213,25 @@ function test3()
 
 	log("=== test3: pass");
 }
+
+function test3_1()
+{
+	var customers = [ "Olive CO", "SAP AG" ];
+	var jo = $("#test3_1 #divCustomers");
+	jo.dataview(customers);
+
+	assert(jo.find(".customer").size() == 2, "dv-for未生效");
+	assert(jo.find(".customer:first span:first").html()==customers[0], "dv-for展开错误");
+
+	var jo2 = $("#test3_1 #divCustomers2");
+	jo2.dataview(customers);
+
+	assert(jo2.find(".customer").size() == 2, "dv-for未生效");
+	assert(jo2.find(".customer:eq(1)").html()==customers[1], "dv-for展开错误");
+
+	log("=== test3_1: pass");
+}
+
 </script>
 <!-- test3 }}} -->
 

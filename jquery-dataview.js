@@ -267,6 +267,29 @@ JS:
 	$(".customer").dataview(customers);
 ```
 
+特别地，name为"this"时表示数据本身，示例：
+
+HTML:
+
+```html
+	<div class="customers" dv-for="this">
+		<span name="this"></span>
+	</div>
+```
+
+或者更简单地：
+
+```html
+	<div class="customers" dv-for="this" name="this"></div>
+```
+
+JS填充数据:
+
+```javascript
+	var customers = ["SAP AG", "Daca Tec"];
+	$(".customers").dataview(customers);
+```
+
 dv-if及dv-show属性中指定一个条件表达式，它可以比name中指定的内容要复杂，它的计算原理是：
 
 ```javascript
