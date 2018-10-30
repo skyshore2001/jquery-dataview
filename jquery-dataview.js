@@ -336,7 +336,7 @@ JS:
 ### 含有子对象数组时重新绑定数据
 
 其原理是：
-对于dv-for结点，在展开后，展开结点会删除dv-for属性，加上dv-expanded属性，
+对于dv-for结点，在展开后，展开结点会删除dv-for属性，加上dv-expanded属性，值为当前数据在数组中的index（从0开始）。
 此外，会添加一个隐藏的span标签，其中保存了原始的dv-for结点，用于重新绑定数据时再展示子对象数组。
 
 注意：
@@ -661,7 +661,7 @@ function setDataView(jo, data, opt, doInit, doSetData)
 			if (! isThis)
 				data1.$parent = data;
 			jo1 = setDataView(jo1, data1, opt1, doInit, true);
-			jo1.attr("dv-expanded", "");
+			jo1.attr("dv-expanded", i);
 			jo1.insertBefore(jo);
 			joRet = joRet.add(jo1);
 		});
