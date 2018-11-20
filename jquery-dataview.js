@@ -207,6 +207,10 @@ JS: 定义format函数
 
 ## 循环创建、条件创建、条件显示
 
+@key dv-for
+@key dv-if
+@key dv-show
+
 子对象数组可以以`dv-for`属性来指定循环展开，每复制一个DOM，都会绑定数据到相应的子对象上。
 
 dv-if及dv-show属性：根据该属性的值计算是否保留该结点，或显示该结点。
@@ -298,6 +302,9 @@ dv-if及dv-show属性中指定一个条件表达式，它可以比name中指定�
 
 ### 条件分支
 
+@key dv-elseif
+@key dv-else
+
 除`dv-if`外，还可以使用`dv-elseif`, `dv-else`。
 
 HTML:
@@ -364,7 +371,35 @@ JS:
 		orders.push({dscr: 'order3'});
 		jo.dataview(orders);
 
+### 通用代码执行 dv-do
+
+(版本1.1)
+
+@key dv-do
+@var $this
+
+在dv-show, dv-if, dv-do这些属性中, 可以执行JS代码, 且可以用`$this`变量代表当前DOM对象的jQuery包装.
+(注意, 写在dv-do这些属性的代码，this变量默认为Window，而非DOM对象)
+
+示例，设置属性、样式等：
+
+	jo.dataview({color:'red', imgUrl:'http://server/1.jpg'});
+
+HTML:
+
+	<p dv-do="$this.css('color', color)"></p>
+	<img dv-do="$this.attr('src', imgUrl)"></img>
+
+这可实现类似于Vue的`v-bind:src=""`或者`:src=""`操作，然而更加灵活。
+
+示例2：以下两种设置的效果等价
+
+	<p dv-show="name=='LJ'"></p>
+	<p dv-do="$this.toggle(name=='LJ')"></p>
+
 ## 指定事件
+
+@key dv-on
 
 在HTML中使用`dv-on`属性指定事件，在JS中使用选项`events`与其对应。
 
@@ -454,6 +489,8 @@ JS:
 - 可通过数据的 `$parent` 属性访问上层数据。
 - 支持子对象的计算字段
 - 不必更新根对象，可以指定更新任意子对象的数据视图。
+
+@var $parent
 
 示例：数据模型如下：
 
@@ -552,7 +589,7 @@ JS:
 function jquery_dataView($)
 {
 
-var m_version = '1.0';
+var m_version = '1.1';
 
 // 以下函数首参数必须是dataview对象，用jo表示。
 var m_exposed = {
@@ -697,7 +734,7 @@ function setDataView(jo, data, opt, doInit, doSetData)
 	var val, val1;
 	if (doInit) {
 		if (val = jo.attr("dv-if")) {
-			val1 = !!evalWithin(data, val);
+			val1 = !!evalWithin(data, val, jo);
 			m_ifval = val1;
 			if (! m_ifval) {
 				jo.remove();
@@ -710,7 +747,7 @@ function setDataView(jo, data, opt, doInit, doSetData)
 				jo.remove();
 				return $([]);
 			}
-			m_ifval = !!evalWithin(data, val);
+			m_ifval = !!evalWithin(data, val, jo);
 			if (! m_ifval) {
 				jo.remove();
 				return $([]);
@@ -726,8 +763,11 @@ function setDataView(jo, data, opt, doInit, doSetData)
 		}
 	}
 	if (val = jo.attr("dv-show")) {
-		val1 = !!evalWithin(data, val);
+		val1 = !!evalWithin(data, val, jo);
 		jo.toggle(val1);
+	}
+	if (val = jo.attr("dv-do")) {
+		evalWithin(data, val, jo);
 	}
 
 	if (doInit && (val = jo.attr("dv-on"))) {
@@ -763,7 +803,7 @@ function setDataView(jo, data, opt, doInit, doSetData)
 }
 
 // 参数名用的怪异，避免与data中字段名冲突
-function evalWithin(data, code__080909)
+function evalWithin(data, code__080909, $this)
 {
 	try {
 		with (data) {

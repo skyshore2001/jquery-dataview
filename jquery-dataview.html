@@ -28,18 +28,12 @@ code {
 	margin: 0.3em 0;
 }
 
-.block {
-	border-bottom: 1px solid #ccc;
-}
-
 </style>
 <link rel="stylesheet" href="style.css" />
 </head>
 
-<body>
 <h1>jquery-dataview 数据视图</h1>
-<div>最后更新：2018-10-30</div>
-<div id="menu">
+<div>最后更新：2018-11-20</div>
 <h2>Modules</h2>
 <div class="toc">
 <p><a href="#jquery-dataview">jquery-dataview (module)</a></p>
@@ -49,12 +43,19 @@ code {
 <p><a href="#$.fn.dataview">$.fn.dataview (fn)</a></p>
 <p><a href="#$.fn.dataview">$.fn.dataview (alias)</a></p>
 <p><a href="#$.fn.dataview.defaults">$.fn.dataview.defaults (var)</a></p>
+<p><a href="#$parent">$parent (var)</a></p>
+<p><a href="#$this">$this (var)</a></p>
+<p><a href="#dv-do">dv-do (key)</a></p>
+<p><a href="#dv-else">dv-else (key)</a></p>
+<p><a href="#dv-elseif">dv-elseif (key)</a></p>
+<p><a href="#dv-for">dv-for (key)</a></p>
+<p><a href="#dv-if">dv-if (key)</a></p>
+<p><a href="#dv-on">dv-on (key)</a></p>
+<p><a href="#dv-show">dv-show (key)</a></p>
 <p><a href="#getData">getData (fn)</a></p>
 <p><a href="#jquery-dataview">jquery-dataview (module)</a></p>
 <p><a href="#version">version (fn)</a></p>
 </div><hr>
-</div>
-<div class="block">
 <h2 id="jquery-dataview">@module jquery-dataview 数据视图</h2><div class="toc"><p style="margin-left:0em"><a href="#jquery-dataview-1 为DOM对象填充数据">1 为DOM对象填充数据</a></p>
 <p style="margin-left:0em"><a href="#jquery-dataview-2 为模板填充数据">2 为模板填充数据</a></p>
 <p style="margin-left:0em"><a href="#jquery-dataview-3 计算属性">3 计算属性</a></p>
@@ -63,6 +64,7 @@ code {
 <p style="margin-left:0em"><a href="#jquery-dataview-6 循环创建、条件创建、条件显示">6 循环创建、条件创建、条件显示</a></p>
 <p style="margin-left:2em"><a href="#jquery-dataview-6.1 条件分支">6.1 条件分支</a></p>
 <p style="margin-left:2em"><a href="#jquery-dataview-6.2 含有子对象数组时重新绑定数据">6.2 含有子对象数组时重新绑定数据</a></p>
+<p style="margin-left:2em"><a href="#jquery-dataview-6.3 通用代码执行 dv-do">6.3 通用代码执行 dv-do</a></p>
 <p style="margin-left:0em"><a href="#jquery-dataview-7 指定事件">7 指定事件</a></p>
 <p style="margin-left:0em"><a href="#jquery-dataview-8 获取数据">8 获取数据</a></p>
 <p style="margin-left:0em"><a href="#jquery-dataview-9 多层嵌套的数据">9 多层嵌套的数据</a></p>
@@ -199,6 +201,9 @@ code {
 <pre><code class="language-html">    &lt;span name="addr.city"&gt;&lt;/span&gt;</code></pre>
 <p>求值时，以 <code>eval("data." + name)</code> 的方式获得值。（未使用with机制计算以免降低性能）</p>
 <h4 id="jquery-dataview-6 循环创建、条件创建、条件显示">6 循环创建、条件创建、条件显示</h4>
+<p class="key"><strong>@key <a id="dv-for">dv-for</a></strong> </p>
+<p class="key"><strong>@key <a id="dv-if">dv-if</a></strong> </p>
+<p class="key"><strong>@key <a id="dv-show">dv-show</a></strong> </p>
 <p>子对象数组可以以<code>dv-for</code>属性来指定循环展开，每复制一个DOM，都会绑定数据到相应的子对象上。</p>
 <p>dv-if及dv-show属性：根据该属性的值计算是否保留该结点，或显示该结点。</p>
 <p>例：使用dv-for, dv-if, dv-show等标签：</p>
@@ -250,6 +255,8 @@ code {
 <p>dv-if及dv-show属性中指定一个条件表达式，它可以比name中指定的内容要复杂，它的计算原理是：</p>
 <pre><code class="language-javascript">    with(data) { eval(val); }</code></pre>
 <h5 id="jquery-dataview-6.1 条件分支">6.1 条件分支</h5>
+<p class="key"><strong>@key <a id="dv-elseif">dv-elseif</a></strong> </p>
+<p class="key"><strong>@key <a id="dv-else">dv-else</a></strong> </p>
 <p>除<code>dv-if</code>外，还可以使用<code>dv-elseif</code>, <code>dv-else</code>。</p>
 <p>HTML:</p>
 <pre><code class="language-html">    &lt;div dv-for="this" id="divStatus"&gt;
@@ -304,7 +311,23 @@ orders.push({dscr: 'order3'});
 jo.dataview(orders);</code></pre>
 </li>
 </ul>
+<h5 id="jquery-dataview-6.3 通用代码执行 dv-do">6.3 通用代码执行 dv-do</h5>
+<p>(版本1.1)</p>
+<p class="key"><strong>@key <a id="dv-do">dv-do</a></strong> </p>
+<p class="var"><strong>@var <a id="$this">$this</a></strong> </p>
+<p>在dv-show, dv-if, dv-do这些属性中, 可以执行JS代码, 且可以用<code>$this</code>变量代表当前DOM对象的jQuery包装.<br />
+(注意, 写在dv-do这些属性的代码，this变量默认为Window，而非DOM对象)</p>
+<p>示例，设置属性、样式等：</p>
+<pre><code>jo.dataview({color:'red', imgUrl:'http://server/1.jpg'});</code></pre>
+<p>HTML:</p>
+<pre><code>&lt;p dv-do="$this.css('color', color)"&gt;&lt;/p&gt;
+&lt;img dv-do="$this.attr('src', imgUrl)"&gt;&lt;/img&gt;</code></pre>
+<p>这可实现类似于Vue的<code>v-bind:src=""</code>或者<code>:src=""</code>操作，然而更加灵活。</p>
+<p>示例2：以下两种设置的效果等价</p>
+<pre><code>&lt;p dv-show="name=='LJ'"&gt;&lt;/p&gt;
+&lt;p dv-do="$this.toggle(name=='LJ')"&gt;&lt;/p&gt;</code></pre>
 <h4 id="jquery-dataview-7 指定事件">7 指定事件</h4>
+<p class="key"><strong>@key <a id="dv-on">dv-on</a></strong> </p>
 <p>在HTML中使用<code>dv-on</code>属性指定事件，在JS中使用选项<code>events</code>与其对应。</p>
 <pre><code class="language-html">    &lt;div dv-on="liOrder_click"&gt;&lt;/div&gt;</code></pre>
 <p>上面代码定义了<code>jo.on("click", data, liOrder_click)</code>，所有用到的函数必须通过<code>events</code>选项定义：</p>
@@ -368,6 +391,7 @@ jo.dataview(orders);</code></pre>
 <li>支持子对象的计算字段</li>
 <li>不必更新根对象，可以指定更新任意子对象的数据视图。</li>
 </ul>
+<p class="var"><strong>@var <a id="$parent">$parent</a></strong> </p>
 <p>示例：数据模型如下：</p>
 <pre><code>customer = {id, name, %addr={country, city}, @orders }
 @orders = {id, amount, @items={id, name} }</code></pre>
@@ -443,12 +467,10 @@ jo.dataview(orders);</code></pre>
 因而，假如上一层指定了opt={formats: ...}，在本层未指定opt时，可以使用上层的formats，而如果本层指定了opt={events: ...}，则上层指定的那些formats无法使用。</li>
 </ul>
 <h4 id="jquery-dataview-10 常见错误">10 常见错误</h4>
-<p>生成的DOM有混乱：常常由标签未闭合导致</p></div>
-<div class="block">
+<p>生成的DOM有混乱：常常由标签未闭合导致</p><hr>
 <h2 id="version">@fn version()</h2>
 <p>取版本号:</p>
-<pre><code>var ver = jo.dataview("version");</code></pre></div>
-<div class="block">
+<pre><code>var ver = jo.dataview("version");</code></pre><hr>
 <h2 id="getData">@fn getData(exact?=false, ret?)</h2>
 <p>取DOM元素对应的数据。<br />
 可对dataview对象或其任意子元素调用该函数，返回该元素所在层次对应的数据。</p>
@@ -456,8 +478,7 @@ jo.dataview(orders);</code></pre>
 <pre><code>var data = jo.dataview('getData');
 var parentData = data.$parent;</code></pre>
 <p class="param"><strong>@param exact</strong> ?=false 查找本结点上的数据，如果没有会继续查找父结点，直到遍历完父结点。设置为true禁止查找父结点。</p>
-<p class="param"><strong>@param ret</strong> ? 输出参数，如果传入一个对象，则会设置 {data, jo, opt} 其中data与返回值一致。jo为包含data的结点，可能是当前结点或其父结点等，opt为该结点上设置的选项。</p></div>
-<div class="block">
+<p class="param"><strong>@param ret</strong> ? 输出参数，如果传入一个对象，则会设置 {data, jo, opt} 其中data与返回值一致。jo为包含data的结点，可能是当前结点或其父结点等，opt为该结点上设置的选项。</p><hr>
 <h2 id="$.fn.dataview">@fn $.fn.dataview(data, opt?)</h2>
 <p class="alias"><strong>@alias <a id="$.fn.dataview">$.fn.dataview</a></strong> (method, param1, ...)</p>
 <p class="param"><strong>@param opt=</strong> {props, events}</p>
@@ -467,12 +488,9 @@ var parentData = data.$parent;</code></pre>
 <ul>
 <li>只有顶层或dv-for标签（子对象数组）的DOM上会直接绑定数据。</li>
 <li>初始化后，dv-for, dv-if属性会被删除。dv-show仍保留，可根据条件显示隐藏对象。</li>
-</ul></div>
-<div class="block">
+</ul><hr>
 <h2 id="$.fn.dataview.defaults">@var $.fn.dataview.defaults</h2>
 <p>设置全局缺省选项。</p>
-<p class="see"><strong>@see <a href="#$.fn.dataview">$.fn.dataview</a></strong>  参考opt参数说明。</p></div>
+<p class="see"><strong>@see <a href="#$.fn.dataview">$.fn.dataview</a></strong>  参考opt参数说明。</p><hr>
 <div style="text-align:center">Generated by jdcloud-gendoc</div>
-</body>
-
 </html>
