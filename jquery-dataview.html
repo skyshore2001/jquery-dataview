@@ -49,11 +49,13 @@ code {
 <p><a href="#dv-else">dv-else (key)</a></p>
 <p><a href="#dv-elseif">dv-elseif (key)</a></p>
 <p><a href="#dv-for">dv-for (key)</a></p>
+<p><a href="#dv-format">dv-format (key)</a></p>
 <p><a href="#dv-if">dv-if (key)</a></p>
 <p><a href="#dv-on">dv-on (key)</a></p>
 <p><a href="#dv-show">dv-show (key)</a></p>
 <p><a href="#getData">getData (fn)</a></p>
 <p><a href="#jquery-dataview">jquery-dataview (module)</a></p>
+<p><a href="#this">this (key)</a></p>
 <p><a href="#version">version (fn)</a></p>
 </div><hr>
 <h2 id="jquery-dataview">@module jquery-dataview 数据视图</h2><div class="toc"><p style="margin-left:0em"><a href="#jquery-dataview-1 为DOM对象填充数据">1 为DOM对象填充数据</a></p>
@@ -86,8 +88,10 @@ code {
 <p>JS填充数据:</p>
 <pre><code class="language-javascript">    var customer = { id: 1001, name: "SAP AG" };
     $(".customer").dataview(customer);</code></pre>
+<p class="key"><strong>@key <a id="this">this</a></strong> </p>
 <p>递归遍历所有带name属性的结点，如<code>&lt;span name="id"&gt;&lt;/span&gt;</code>会用<code>customer.id</code>为其赋值。<br />
 特别地，name为&quot;this&quot;时表示数据本身。</p>
+<p>版本1.1起, 以&quot;dv-&quot;开头的类名, 与设置<code>name</code>属性具有相同效果, 如<code>&lt;span class="dv-id"&gt;&lt;/span&gt;</code>与上例相同.</p>
 <p>JS修改数据后，可无参数调用dataview来刷新显示：</p>
 <pre><code class="language-javascript">    customer.name = "SAP China";
     $(".customer").dataview();</code></pre>
@@ -148,6 +152,7 @@ code {
 <p>在初始化时，做为计算属性的函数会自动添加到相应的数据上。<br />
 在更新视图时，如果发现name属性指定的是一个函数，则以调用后的值来填充。</p>
 <h4 id="jquery-dataview-4 属性格式化显示">4 属性格式化显示</h4>
+<p class="key"><strong>@key <a id="dv-format">dv-format</a></strong> </p>
 <p>在JS中通过<code>formats</code>选项指定属性的格式化函数。</p>
 <p>HTML:</p>
 <pre><code class="language-html">    &lt;div class="order"&gt;
@@ -322,10 +327,22 @@ jo.dataview(orders);</code></pre>
 <p>HTML:</p>
 <pre><code>&lt;p dv-do="$this.css('color', color)"&gt;&lt;/p&gt;
 &lt;img dv-do="$this.attr('src', imgUrl)"&gt;&lt;/img&gt;</code></pre>
-<p>这可实现类似于Vue的<code>v-bind:src=""</code>或者<code>:src=""</code>操作，然而更加灵活。</p>
+<p>这类似于Vue的<code>v-bind:src=""</code>或者<code>:src=""</code>操作，然而更加灵活。</p>
 <p>示例2：以下两种设置的效果等价</p>
 <pre><code>&lt;p dv-show="name=='LJ'"&gt;&lt;/p&gt;
 &lt;p dv-do="$this.toggle(name=='LJ')"&gt;&lt;/p&gt;</code></pre>
+<p>示例3：以下三种设置的效果等价</p>
+<pre><code>&lt;p name="price"&gt;&lt;/p&gt;
+&lt;p class="dv-price"&gt;&lt;/p&gt;
+&lt;p dv-do="$this.html(price)"&gt;&lt;/p&gt;</code></pre>
+<p>在代码中也可以调用计算属性, 但需要加括号, 如以下两行等价:</p>
+<pre><code>&lt;span class="dv-fullname"&gt;&lt;/span&gt;
+&lt;span dv-do="$this.html(fullname())"&gt;&lt;/span&gt;</code></pre>
+<p>JS:</p>
+<pre><code>var props = {
+    fullname: function () { this ... }
+};
+jo.dataview(data, {props: props});</code></pre>
 <h4 id="jquery-dataview-7 指定事件">7 指定事件</h4>
 <p class="key"><strong>@key <a id="dv-on">dv-on</a></strong> </p>
 <p>在HTML中使用<code>dv-on</code>属性指定事件，在JS中使用选项<code>events</code>与其对应。</p>

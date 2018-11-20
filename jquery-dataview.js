@@ -28,8 +28,12 @@ JS填充数据:
 	$(".customer").dataview(customer);
 ```
 
+@key this
+
 递归遍历所有带name属性的结点，如`<span name="id"></span>`会用`customer.id`为其赋值。
 特别地，name为"this"时表示数据本身。
+
+版本1.1起, 以"dv-"开头的类名, 与设置`name`属性具有相同效果, 如`<span class="dv-id"></span>`与上例相同.
 
 JS修改数据后，可无参数调用dataview来刷新显示：
 
@@ -127,6 +131,8 @@ JS: 定义fullname属性
 在更新视图时，如果发现name属性指定的是一个函数，则以调用后的值来填充。
 
 ## 属性格式化显示
+
+@key dv-format
 
 在JS中通过`formats`选项指定属性的格式化函数。
 
@@ -390,12 +396,30 @@ HTML:
 	<p dv-do="$this.css('color', color)"></p>
 	<img dv-do="$this.attr('src', imgUrl)"></img>
 
-这可实现类似于Vue的`v-bind:src=""`或者`:src=""`操作，然而更加灵活。
+这类似于Vue的`v-bind:src=""`或者`:src=""`操作，然而更加灵活。
 
 示例2：以下两种设置的效果等价
 
 	<p dv-show="name=='LJ'"></p>
 	<p dv-do="$this.toggle(name=='LJ')"></p>
+
+示例3：以下三种设置的效果等价
+
+	<p name="price"></p>
+	<p class="dv-price"></p>
+	<p dv-do="$this.html(price)"></p>
+
+在代码中也可以调用计算属性, 但需要加括号, 如以下两行等价:
+
+	<span class="dv-fullname"></span>
+	<span dv-do="$this.html(fullname())"></span>
+
+JS:
+
+	var props = {
+		fullname: function () { this ... }
+	};
+	jo.dataview(data, {props: props});
 
 ## 指定事件
 
@@ -785,7 +809,14 @@ function setDataView(jo, data, opt, doInit, doSetData)
 	}
 
 	if (jo.attr("name")) {
-		setItemContentByName(jo, data, opt);
+		setItemContentByName(jo, data, opt, jo.attr("name"));
+	}
+	else {
+		var cls = jo.attr("class");
+		var m;
+		if (cls && (m=cls.match(/(?:^| )dv-(\w+)(?: |$)/))!=null) {
+			setItemContentByName(jo, data, opt, m[1]);
+		}
 	}
 
 	if (doInit) {
@@ -820,9 +851,8 @@ function evalSimple(data, name)
 	return eval('data.' + name);
 }
 
-function setItemContentByName(ji, data, opt)
+function setItemContentByName(ji, data, opt, name)
 {
-	var name = ji.attr("name");
 	var fmt = ji.attr("dv-format");
 	var content = null;
 	if (name == "this") {
