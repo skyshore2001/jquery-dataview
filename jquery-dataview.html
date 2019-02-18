@@ -28,12 +28,18 @@ code {
 	margin: 0.3em 0;
 }
 
+.block {
+	border-bottom: 1px solid #ccc;
+}
+
 </style>
 <link rel="stylesheet" href="style.css" />
 </head>
 
+<body>
 <h1>jquery-dataview 数据视图</h1>
-<div>最后更新：2018-11-20</div>
+<div>最后更新：2019-02-18</div>
+<div id="menu">
 <h2>Modules</h2>
 <div class="toc">
 <p><a href="#jquery-dataview">jquery-dataview (module)</a></p>
@@ -58,6 +64,8 @@ code {
 <p><a href="#this">this (key)</a></p>
 <p><a href="#version">version (fn)</a></p>
 </div><hr>
+</div>
+<div class="block">
 <h2 id="jquery-dataview">@module jquery-dataview 数据视图</h2><div class="toc"><p style="margin-left:0em"><a href="#jquery-dataview-1 为DOM对象填充数据">1 为DOM对象填充数据</a></p>
 <p style="margin-left:0em"><a href="#jquery-dataview-2 为模板填充数据">2 为模板填充数据</a></p>
 <p style="margin-left:0em"><a href="#jquery-dataview-3 计算属性">3 计算属性</a></p>
@@ -70,7 +78,10 @@ code {
 <p style="margin-left:0em"><a href="#jquery-dataview-7 指定事件">7 指定事件</a></p>
 <p style="margin-left:0em"><a href="#jquery-dataview-8 获取数据">8 获取数据</a></p>
 <p style="margin-left:0em"><a href="#jquery-dataview-9 多层嵌套的数据">9 多层嵌套的数据</a></p>
-<p style="margin-left:0em"><a href="#jquery-dataview-10 常见错误">10 常见错误</a></p>
+<p style="margin-left:0em"><a href="#jquery-dataview-10 允许多个DOM绑定同一数据">10 允许多个DOM绑定同一数据</a></p>
+<p style="margin-left:0em"><a href="#jquery-dataview-11 常见错误">11 常见错误</a></p>
+<p style="margin-left:0em"><a href="#jquery-dataview-12 已知问题">12 已知问题</a></p>
+<p style="margin-left:0em"><a href="#jquery-dataview-13 多个dataview对象">13 多个dataview对象</a></p>
 </div>
 <p>jquery插件，用于对DOM进行数据填充与更新，也很适合根据DOM模板创建对象。</p>
 <p>特点：</p>
@@ -483,11 +494,43 @@ jo.dataview(data, {props: props});</code></pre>
 <li>在为多层嵌套数据设置选项时，如果某层未指定opt，可使用上一层的的选项。如果指定了opt，则上一层的选项无效。<br />
 因而，假如上一层指定了opt={formats: ...}，在本层未指定opt时，可以使用上层的formats，而如果本层指定了opt={events: ...}，则上层指定的那些formats无法使用。</li>
 </ul>
-<h4 id="jquery-dataview-10 常见错误">10 常见错误</h4>
-<p>生成的DOM有混乱：常常由标签未闭合导致</p><hr>
+<h4 id="jquery-dataview-10 允许多个DOM绑定同一数据">10 允许多个DOM绑定同一数据</h4>
+<p>(v1.2)</p>
+<pre><code class="language-html">&lt;p class="userInfo"&gt;id=&lt;span name="id"&gt;&lt;/span&gt;&lt;/p&gt;
+...
+&lt;p class="userInfo"&gt;name=&lt;span name="name"&gt;&lt;/span&gt;&lt;/p&gt;</code></pre>
+<pre><code class="language-javascript">jpage.find(".userInfo").dataview(userInfo);</code></pre>
+<h4 id="jquery-dataview-11 常见错误">11 常见错误</h4>
+<p>生成的DOM有混乱：常常由标签未闭合导致</p>
+<h4 id="jquery-dataview-12 已知问题">12 已知问题</h4>
+<p>当有多层数据时，直接设置数据中的子对象，无法更新。</p>
+<pre><code>var data = { a: 'aa', b: [{id: 100}] };
+jo.dataview(data, opt);
+
+// 无法更新
+data.b = [{id: 200}, {id:300}];
+jo.dataview();
+
+// 解决方法
+jo.dataview(data); // 重新绑定，效率差。这时不用指定opt, 延用之前的。</code></pre>
+<h4 id="jquery-dataview-13 多个dataview对象">13 多个dataview对象</h4>
+<p>如果数据对象是分离的，可以设置多个dataview对象：</p>
+<pre><code>&lt;div&gt;
+    &lt;div class="user dv-userName"&gt;&lt;/div&gt;
+    &lt;div class="card dv-cardNo"&gt;&lt;/div&gt;
+    &lt;div class="user dv-userPhone"&gt;&lt;/div&gt;
+    &lt;div class="card dv-cardBalance"&gt;&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+<p>JS:</p>
+<pre><code>// 更新时直接重绑定
+jpage.find("user").dataview({userName:'name', phone:'123'});
+jpage.find("card").dataview({cardNo:'12', cardBalance:99});</code></pre>
+<p>它比于用 {user: {...}, card: {...}} 来绑定更方便和高效，因为没两个数据不是一起出现的，统一控制较麻烦，不如分别绑定。</p></div>
+<div class="block">
 <h2 id="version">@fn version()</h2>
 <p>取版本号:</p>
-<pre><code>var ver = jo.dataview("version");</code></pre><hr>
+<pre><code>var ver = jo.dataview("version");</code></pre></div>
+<div class="block">
 <h2 id="getData">@fn getData(exact?=false, ret?)</h2>
 <p>取DOM元素对应的数据。<br />
 可对dataview对象或其任意子元素调用该函数，返回该元素所在层次对应的数据。</p>
@@ -495,7 +538,8 @@ jo.dataview(data, {props: props});</code></pre>
 <pre><code>var data = jo.dataview('getData');
 var parentData = data.$parent;</code></pre>
 <p class="param"><strong>@param exact</strong> ?=false 查找本结点上的数据，如果没有会继续查找父结点，直到遍历完父结点。设置为true禁止查找父结点。</p>
-<p class="param"><strong>@param ret</strong> ? 输出参数，如果传入一个对象，则会设置 {data, jo, opt} 其中data与返回值一致。jo为包含data的结点，可能是当前结点或其父结点等，opt为该结点上设置的选项。</p><hr>
+<p class="param"><strong>@param ret</strong> ? 输出参数，如果传入一个对象，则会设置 {data, jo, opt} 其中data与返回值一致。jo为包含data的结点，可能是当前结点或其父结点等，opt为该结点上设置的选项。</p></div>
+<div class="block">
 <h2 id="$.fn.dataview">@fn $.fn.dataview(data, opt?)</h2>
 <p class="alias"><strong>@alias <a id="$.fn.dataview">$.fn.dataview</a></strong> (method, param1, ...)</p>
 <p class="param"><strong>@param opt=</strong> {props, events}</p>
@@ -505,9 +549,12 @@ var parentData = data.$parent;</code></pre>
 <ul>
 <li>只有顶层或dv-for标签（子对象数组）的DOM上会直接绑定数据。</li>
 <li>初始化后，dv-for, dv-if属性会被删除。dv-show仍保留，可根据条件显示隐藏对象。</li>
-</ul><hr>
+</ul></div>
+<div class="block">
 <h2 id="$.fn.dataview.defaults">@var $.fn.dataview.defaults</h2>
 <p>设置全局缺省选项。</p>
-<p class="see"><strong>@see <a href="#$.fn.dataview">$.fn.dataview</a></strong>  参考opt参数说明。</p><hr>
+<p class="see"><strong>@see <a href="#$.fn.dataview">$.fn.dataview</a></strong>  参考opt参数说明。</p></div>
 <div style="text-align:center">Generated by jdcloud-gendoc</div>
+</body>
+
 </html>
