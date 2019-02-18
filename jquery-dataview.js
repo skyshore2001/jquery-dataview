@@ -174,6 +174,17 @@ JS: 定义format函数
 	jo.dataview(); // endTm与interval均被更新.
 ```
 
+(v1.2) 如果是多处都使用，设置缺省格式更方便，例如定义"num"格式（该格式缺省提供，不必再定义，此处仅用于举例）：
+```javascript
+	$.extends($.fn.dataview.defaults.formats, {
+		num: function (val) {
+			if (val == null)
+				return 0;
+			return parseFloat(val);
+		}
+	});
+```
+
 上例中，显示"总时长"也可用计算字段实现，且更加合理，如
 ```html
 		<p>总时长：<span name="interval"></span></p>
@@ -678,9 +689,18 @@ var m_exposed = {
 	}
 };
 
+var m_formats = {
+	num: function (val) {
+		if (val == null)
+			return 0;
+		return parseFloat(val);
+	}
+};
+
 var m_defaults = {
 	props: {},
-	events: {}
+	events: {},
+	formats: m_formats
 };
 
 var m_ifstack = [];
@@ -937,7 +957,7 @@ function setItemContentByName(ji, data, opt, name)
 		content = content.call(data);
 	}
 	if (fmt) {
-		var fn = opt && opt.formats && opt.formats[fmt];
+		var fn = opt && opt.formats && opt.formats[fmt] || (m_defaults.formats && m_defaults.formats[fmt]);
 		if (fn == null) {
 			$.error("*** no format for item [name=" + name + "]: " + fmt);
 		}

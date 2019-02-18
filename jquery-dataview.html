@@ -195,6 +195,14 @@ code {
     jo.find("[name=endTm][dv-format=interval]").dataview(); // “总时长”显示已更新，“结束日期”显示未更新
     // 全部更新
     jo.dataview(); // endTm与interval均被更新.</code></pre>
+<p>(v1.2) 如果是多处都使用，设置缺省格式更方便，例如定义&quot;num&quot;格式（该格式缺省提供，不必再定义，此处仅用于举例）：</p>
+<pre><code class="language-javascript">    $.extends($.fn.dataview.defaults.formats, {
+        num: function (val) {
+            if (val == null)
+                return 0;
+            return parseFloat(val);
+        }
+    });</code></pre>
 <p>上例中，显示&quot;总时长&quot;也可用计算字段实现，且更加合理，如</p>
 <pre><code class="language-html">        &lt;p&gt;总时长：&lt;span name="interval"&gt;&lt;/span&gt;&lt;/p&gt;</code></pre>
 <pre><code class="language-javascript">    var opt = {
