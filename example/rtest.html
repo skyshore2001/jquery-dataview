@@ -547,6 +547,21 @@ function test7()
 	var data1 = jo.find("[name=dscr]:eq(1)").dataview('getData');
 	assert(data1 === customer2.orders[1]);
 
+	var customer3 = {
+		id: 1003, 
+		addr: {country: "CN", city: "Suzhou"},
+		orders: [{dscr: 'order2.1'}, {dscr: 'order2.3'}]
+	};
+	jo.dataview(customer3);
+	assert(jo.find("[name=id]").html() == "1003");
+	assert(jo.find("[name=name]").html() == "{CUSTOMER 1003}", "props或dv-format未生效");
+	assert(jo.find("[name=addr\\.city]").html() == "Suzhou");
+
+	var data = jo.dataview('getData');
+	assert(data === customer3);
+
+	var data1 = jo.find("[name=dscr]:eq(1)").dataview('getData');
+	assert(data1 === customer3.orders[1]);
 	log("=== test7: pass");
 }
 

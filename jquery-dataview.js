@@ -605,15 +605,60 @@ JS:
 - 在为多层嵌套数据设置选项时，如果某层未指定opt，可使用上一层的的选项。如果指定了opt，则上一层的选项无效。
  因而，假如上一层指定了opt={formats: ...}，在本层未指定opt时，可以使用上层的formats，而如果本层指定了opt={events: ...}，则上层指定的那些formats无法使用。
 
+## 允许多个DOM绑定同一数据
+(v1.2)
+
+```html
+<p class="userInfo">id=<span name="id"></span></p>
+...
+<p class="userInfo">name=<span name="name"></span></p>
+```
+
+```javascript
+jpage.find(".userInfo").dataview(userInfo);
+```
+
 ## 常见错误
 
 生成的DOM有混乱：常常由标签未闭合导致
 
+## 已知问题
+
+当有多层数据时，直接设置数据中的子对象，无法更新。
+
+	var data = { a: 'aa', b: [{id: 100}] };
+	jo.dataview(data, opt);
+
+	// 无法更新
+	data.b = [{id: 200}, {id:300}];
+	jo.dataview();
+
+	// 解决方法
+	jo.dataview(data); // 重新绑定，效率差。这时不用指定opt, 延用之前的。
+
+## 多个dataview对象
+
+如果数据对象是分离的，可以设置多个dataview对象：
+
+	<div>
+		<div class="user dv-userName"></div>
+		<div class="card dv-cardNo"></div>
+		<div class="user dv-userPhone"></div>
+		<div class="card dv-cardBalance"></div>
+	</div>
+
+JS:
+
+	// 更新时直接重绑定
+	jpage.find("user").dataview({userName:'name', phone:'123'});
+	jpage.find("card").dataview({cardNo:'12', cardBalance:99});
+
+它比于用 {user: {...}, card: {...}} 来绑定更方便和高效，因为没两个数据不是一起出现的，统一控制较麻烦，不如分别绑定。
  */
 function jquery_dataView($)
 {
 
-var m_version = '1.1';
+var m_version = '1.2';
 
 // 以下函数首参数必须是dataview对象，用jo表示。
 var m_exposed = {
@@ -737,7 +782,25 @@ function setDataView(jo, data, opt, doInit, doSetData)
 		}
 		return joRet;
 	}
+/* 试验绑定子对象；但暂未解决子对象整体更新问题，不开放
+	if (doInit && (vfor = jo.attr("dv-for1")) ) {
+		var data1 = data[vfor];
+		if (data1 != null && ! $.isPlainObject(data1)) {
+			console.log("!!! warn: not plain object: " + vfor);
+			return;
+		}
+		jo.toggle(data1 != null);
+		if (data1 == null)
+			data1 = {};
+		data1.$parent = data;
+		var opt1 = (opt.children && opt.children[vfor]) || {};
+		opt1.events = opt.events;
 
+		data = data1;
+		opt = opt1;
+		doSetData = true;
+	}
+*/
 	if (doInit && doSetData) {
 		// 顶层及dv-for结点才会赋值
 		setData(jo, data, opt);
@@ -749,10 +812,15 @@ function setDataView(jo, data, opt, doInit, doSetData)
 	// 更新时，取最近结点的data和opt
 	if (!doInit) {
 		var rv = {};
-		if (getData(jo, null, rv) == null)
+		var exact = (data != null); // 如果指定了data，则看看本结点是否已有绑定数据。否则找最近的绑定结点。
+		var data1 = getData(jo, exact, rv);
+		if (data == null && data1 == null)
 			$.error("*** dataview does not init");
-		opt = rv.opt;
-		data = rv.data;
+		if (data1 != null) { // 用绑定的数据替代data
+			opt = rv.opt;
+			data = rv.data;
+			console.log(data);
+		}
 	}
 
 	var val, val1;
@@ -943,6 +1011,16 @@ function setFormData(jo, data, opt)
 }
 */
 
+function forEachAndReturnFirst(jo, fn) {
+	var ret;
+	$.each(jo, function () {
+		var rv = fn($(this));
+		if (ret === undefined)
+			ret = rv;
+	});
+	return ret;
+}
+
 /**
 @fn $.fn.dataview(data, opt?)
 @alias $.fn.dataview(method, param1, ...)
@@ -971,19 +1049,29 @@ $.fn.extend({
 		}
 
 		// 更新操作
-		var isBound = (getData(this) != null);
-		if (data == null && isBound)
-			return setDataView(this);
-
-		var opt1 = $.extend({}, m_defaults, opt);
-		if (this.size() != 1) {
-			$.error("*** dataview: MUST only one DOM object.");
+		var rv = {};
+		var data1 = getData(this, false, rv);
+		if (data1 != null && data == null) { // 已绑定用data1
+			return forEachAndReturnFirst(this, function (je){
+				return setDataView(je);
+			});
 		}
-		if (isBound) {
+
+		var opt1;
+		if (data1 == null || opt) { // 绑定并设置opt
+			opt1 = $.extend({}, m_defaults, opt);
+		}
+		else {  // 已绑定，opt使用原先的。
+			opt1 = rv.opt;
+		}
+		if (data1) {
 			this.find("[dv-expanded]").remove();
 		}
-		// 初次：doSetData=true设置顶层数据。
-		return setDataView(this, data, opt1, true, true);
+		// 如果有多个DOM，返回每一个DOM的返回结果。
+		return forEachAndReturnFirst(this, function (je){
+			// 初次：doSetData=true设置顶层数据。
+			return setDataView(je, data, opt1, true, true);
+		});
 	}
 	
 });
