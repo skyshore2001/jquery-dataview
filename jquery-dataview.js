@@ -432,6 +432,29 @@ JS:
 	};
 	jo.dataview(data, {props: props});
 
+如果dv-do中内容很多，也可以直接用函数（props中定义函数），比如设置多个属性：
+
+	// this是数据，$this是当前节点jQuery对象
+	var tpl = '<div dv-for="this" class="p-list" dv-do="setElem($this)" name="id"></div>';
+	var props = {
+		setElem: function (je) {
+			je.attr({
+				"id": "lst" + this.id,
+				"data-cond": "id=" + this.id
+			});
+			if (this.active)
+				je.addClass("active");
+		}
+	};
+	var data = [
+		{id: 10, active: true},
+		{id: 20}
+	]
+	$(tpl).dataview(data, {props: props}).appendTo(jp);
+
+注意：本插件重点用于渲染后还经常更新的场景，比如各种关联计算（Vue的轻量版）；
+如果每次都重新根据模板创建数据，那么推荐使用juicer模板引擎，更直观和方便。
+
 ## 指定事件
 
 @key dv-on
