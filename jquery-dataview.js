@@ -455,6 +455,10 @@ JS:
 注意：本插件重点用于渲染后还经常更新的场景，比如各种关联计算（Vue的轻量版）；
 如果每次都重新根据模板创建数据，那么推荐使用juicer模板引擎，更直观和方便。
 
+	{@each this as it,index}
+	<div id="${id}" data-cond="${cond}" class="p-list ${active}" name="id">${id}</div>
+	{@/each}
+
 ## 指定事件
 
 @key dv-on
